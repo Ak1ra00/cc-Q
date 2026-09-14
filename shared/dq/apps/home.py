@@ -3,7 +3,7 @@
 #
 from dq import theme
 from dq.apps import APPS, find
-from charcodes import KEY_CANCEL, KEY_HOME
+from charcodes import KEY_CANCEL, KEY_HOME, KEY_UP, KEY_DOWN
 
 
 _themed = False
@@ -21,6 +21,7 @@ async def run():
         theme.apply()
         _themed = True
 
+    top = 0
     while True:
         dis.clear()
         theme.header(dis, 'cc-Q', _power())
@@ -28,10 +29,13 @@ async def run():
         today = today_or_none()
         theme.body(dis, 0, today or 'date not set', x=2)
 
-        # Seven rows for apps, which is what is left after the header, the date
-        # and the footer. More than that and the extras are reachable by hotkey
-        # but not listed -- the day that happens, this wants paging.
-        for n, app in enumerate(APPS[:7]):
+        # Seven rows of apps at a time, and the list scrolls. It used to show
+        # the first seven and silently drop the rest, which was fine at seven
+        # apps and a bug at eight.
+        rows = theme.BODY_ROWS - 1
+        if top > max(0, len(APPS) - rows):
+            top = max(0, len(APPS) - rows)
+        for n, app in enumerate(APPS[top:top + rows]):
             try:
                 status, alert = app.home_line()
             except Exception:
@@ -39,6 +43,10 @@ async def run():
             dis.text(2, theme.BODY_TOP + 1 + n,
                      theme.pad('%s  %s' % (app.hotkey, app.title), status,
                                theme.CHARS_W - 2))
+        if len(APPS) > rows:
+            dis.text(-1, theme.BODY_TOP + 1, '\u25b2' if top else ' ', dark=True)
+            dis.text(-1, theme.BODY_TOP + rows, '\u25bc'
+                     if top + rows < len(APPS) else ' ', dark=True)
 
         theme.footer(dis, _storage(), 'X exit')
         dis.show()
@@ -46,6 +54,12 @@ async def run():
         ch = await ux_wait_keydown()
         if ch in (KEY_CANCEL, KEY_HOME):
             return                          # back to the upstream menu
+        if ch == KEY_UP:
+            top = max(0, top - 1)
+            continue
+        if ch == KEY_DOWN:
+            top = min(max(0, len(APPS) - (theme.BODY_ROWS - 1)), top + 1)
+            continue
         app = find(ch)
         if app:
             try:

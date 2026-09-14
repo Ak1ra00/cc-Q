@@ -37,6 +37,8 @@ freeze_as_mpy('', [
 	'dq/apps/sign.py',
 	'dq/apps/witness.py',
 	'dq/apps/keypad.py',
+	'dq/apps/words.py',
+	'dq/apps/dice.py',
 ], opt=0)
 
 # Optimize data-like files, since no need to debug them.

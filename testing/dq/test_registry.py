@@ -2,7 +2,8 @@
 # knows another; these are the tests that keep that true.
 import pytest
 
-ALL = ('vault', 'codes', 'journal', 'recovery', 'sign', 'witness', 'keypad')
+ALL = ('vault', 'codes', 'journal', 'recovery', 'sign', 'witness', 'keypad',
+       'words', 'dice')
 
 
 def _load_all():
@@ -86,11 +87,16 @@ def test_framework_does_not_import_apps(settings):
 
 
 def test_every_app_fits_the_home_screen(settings):
-    "seven rows is what is left after the header, the date and the footer"
+    """Seven rows are visible; the status screen scrolls past that.
+
+    Titles have to fit beside their status text in 32 columns, and no hotkey may
+    collide with the two rows the top menu adds itself.
+    """
     apps = _load_all()
-    assert len(apps) <= 7, 'home.py needs paging before an eighth app lands'
     for app in apps:
-        assert len(app.title) <= 10
+        assert len(app.title) <= 10, app.title
+        assert app.hotkey not in ('0', 'z'), 'clashes with status / Coldcard'
+    assert len(apps) > 7, 'this test is only interesting once it scrolls'
 
 
 def test_home_line_never_raises(settings, monkeypatch):

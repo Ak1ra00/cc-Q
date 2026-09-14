@@ -441,6 +441,7 @@ def _dq_apps():
     # so adding an app never means editing this file
     import dq.apps.vault, dq.apps.codes, dq.apps.journal
     import dq.apps.recovery, dq.apps.sign, dq.apps.witness, dq.apps.keypad
+    import dq.apps.words, dq.apps.dice
     from dq.apps import APPS
     return APPS
 

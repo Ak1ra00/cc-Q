@@ -130,6 +130,7 @@ def t_menu_build():
     # pieces it needs exist and nothing raises
     import dq.apps.vault, dq.apps.codes, dq.apps.journal
     import dq.apps.recovery, dq.apps.sign, dq.apps.witness, dq.apps.keypad
+    import dq.apps.words, dq.apps.dice
     from dq.apps import APPS
     titles = [a.title for a in APPS]
     keys = [a.hotkey for a in APPS]
@@ -138,15 +139,38 @@ def t_menu_build():
     assert all(len(t) <= 10 for t in titles), titles
 check('top-menu rows are unique and fit', t_menu_build)
 
+def t_words():
+    from dq.apps import words
+    d = words.dictionary()
+    assert len(d) == 555, len(d)            # the real wordlist, not a shim
+    assert all(len(w) == 5 for w in d)
+    assert words.pick() in d                 # TRNG path stays in range
+    H, N, M = words.HIT, words.NEAR, words.MISS
+    assert words.score('agree', 'eagle') == [N, N, M, N, H]
+    assert words.score('alley', 'alley') == [H] * 5
+check('words: real BIP-39 dictionary + scoring', t_words)
+
+def t_dice():
+    from dq.apps import dice
+    rolls = dice.roll(6, 5)
+    assert all(1 <= r <= 6 for r in rolls)
+    nonce = dice.new_nonce()
+    code = dice.short(dice.commitment(6, rolls, nonce))
+    assert dice.verify(6, rolls, nonce, code)
+    assert not dice.verify(6, [r for r in reversed(rolls)] if len(set(rolls)) > 1
+                           else [rolls[0] % 6 + 1] + rolls[1:], nonce, code)
+check('dice: commitment binds the roll (real TRNG/SHA)', t_dice)
+
 def t_registry():
     import dq.apps.vault, dq.apps.codes, dq.apps.journal
     import dq.apps.recovery, dq.apps.sign, dq.apps.witness, dq.apps.keypad
+    import dq.apps.words, dq.apps.dice
     from dq.apps import APPS, find
-    assert len(APPS) == 7, len(APPS)
+    assert len(APPS) == 9, len(APPS)
     keys = [a.hotkey for a in APPS]
-    assert len(set(keys)) == 7, keys
+    assert len(set(keys)) == 9, keys
     assert find('v').name == 'vault'
-check('all 7 apps register under MicroPython', t_registry)
+check('all 9 apps register under MicroPython', t_registry)
 
 print('')
 print('RESULT: %d failed' % len(fails))
