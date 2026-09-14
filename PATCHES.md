@@ -11,6 +11,7 @@ under ten files.
 |---|---|---|
 | `README.md` | Replaced upstream's README with cc-Q's. | The root README is the first thing anyone sees, and upstream's describes a Bitcoin wallet this firmware no longer is. Upstream's text is kept verbatim at `docs/upstream-README.md`, so nothing was lost and the per-platform build notes are still one click away. |
 | `releases/.gitignore` | Added `!cc-Q/*.dfu` beside the existing `*.dfu`. | Lets cc-Q binaries live in `releases/cc-Q/` while upstream's ignore of stray `.dfu` files elsewhere stays exactly as it was. |
+| `.gitmodules` | `ignore = dirty` on every submodule entry. | Building the firmware dirties the submodules every time: `make setup` creates symlinks inside MicroPython and moves nested submodule pointers, and libngu patches its own bech32 sources. None of it is ours and none of it is committable, but it makes `git status` permanently noisy and buries real changes. `dirty` hides working-tree noise only — a moved submodule **commit** still shows, which is the thing we must never miss. |
 | `shared/manifest_q1.py` | One `freeze_as_mpy` block listing the `dq/` modules. | Nothing of ours ships to the device otherwise. Additive: upstream's own blocks are untouched. |
 | `shared/flow.py` | One `start_dq()` helper and one `MenuItem('cc-Q', shortcut='q')` on each of `VirginSystem`, `EmptyWallet` and `NormalSystem`. | The single entry point. It is on all three menus because cc-Q works with no seed, so it must be reachable on a device that has never had one. |
 
