@@ -5,9 +5,10 @@ developer key (key 0). They are *unofficial firmware*: the Q1 shows a long warni
 boot and the genuine light stays red until Coinkite-signed firmware is reinstalled. Read
 the warnings in the [top-level README](../../README.md) first.
 
-| File | Version | Source | Signing key |
-|---|---|---|---|
-| `2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu` | 1.5.2Q | upstream `2026-09-03T1540-v1.5.2Q` (`84fd1a5f`), unmodified | dev key 0 |
+| File | What is in it | Signing key |
+|---|---|---|
+| `cc-Q-0.1-2026-09-14-q1-devkey0.dfu` | **current.** All seven apps, on upstream 1.5.2Q. | dev key 0 |
+| `2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu` | Upstream 1.5.2Q rebuilt, unchanged. Kept so later builds can be diffed against it. | dev key 0 |
 
 Check the download before flashing:
 

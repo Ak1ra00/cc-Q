@@ -59,6 +59,19 @@ to get subtly wrong in a thing whose failure mode is "your vault is gone". If it
 lands later it should be a second format alongside this one, never a silent
 replacement.
 
+**The documented build recipe was wrong, and is fixed.** Passing
+`CFLAGS_EXTRA=` on the make command line *replaces* the board's own
+`CFLAGS_EXTRA +=` lines, which carry `-DMP_CONFIGFILE` and `-DCOLDCARD_DEBUG`.
+The build then fails with `'COLDCARD_DEBUG' undeclared`. Any extra flag has to
+repeat those defines; the README now does.
+
+**Run the modules under MicroPython, not just CPython.** `testing/dq/microcheck.py`
+executes them on the simulator binary with the device's real AES, HMAC,
+secp256k1 and TRNG. On its first run it found `str.ljust` and `str.rjust` in
+theme.py and otp.py -- neither exists in MicroPython, and the `rjust` was inside
+`hotp()`, so every sign-in code would have crashed on hardware. 117 CPython tests
+had not noticed. Run both.
+
 **Time is not available.** See the M0 finding in `SPEC.md`. No code may assume a
 wall clock exists; anything that needs one asks the owner.
 

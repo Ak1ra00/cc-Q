@@ -290,7 +290,7 @@ def s_download():
     for x, y, w, h in ((0, 0, W, 1), (0, H - 1, W, 1), (0, 0, 1, H), (W - 1, 0, 1, H)):
         p.rect(x, y, w, h, PHOSPHOR, 0.55)
     p.text_px(16, 8, '\u25b6 DOWNLOAD .DFU', PHOSPHOR)
-    p.text_px(16, 32, '1.5.2Q  baseline  \u2022  Q1', FAINT)
+    p.text_px(16, 32, 'v0.1  \u2022  7 apps  \u2022  Q only', FAINT)
     return p
 
 

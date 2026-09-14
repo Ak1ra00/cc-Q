@@ -12,18 +12,19 @@ application.
 Built on [Coldcard/firmware](https://github.com/Coldcard/firmware), **Q1 target
 only**. Not affiliated with, endorsed by, or supported by Coinkite.
 
-<a href="https://github.com/Ak1ra00/cc-Q/releases/download/2026-09-03T1540-v1.5.2Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu"><img src="docs/img/download-dfu.png" width="300" alt="Download the cc-Q .dfu — 1.5.2Q baseline, Q1 only"></a>
+<a href="https://github.com/Ak1ra00/cc-Q/releases/download/v0.1/cc-Q-0.1-2026-09-14-q1-devkey0.dfu"><img src="docs/img/download-dfu.png" width="300" alt="Download cc-Q 0.1 for the Coldcard Q"></a>
 
-**[Download the `.dfu`](https://github.com/Ak1ra00/cc-Q/releases/download/2026-09-03T1540-v1.5.2Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu)** ·
-sha256 `86868b47…a3d61` ·
-[verify it first](#firmware) ·
-[in-tree copy](releases/cc-Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu) ·
-[release page](https://github.com/Ak1ra00/cc-Q/releases/tag/2026-09-03T1540-v1.5.2Q)
+**[Download `cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](https://github.com/Ak1ra00/cc-Q/releases/download/v0.1/cc-Q-0.1-2026-09-14-q1-devkey0.dfu)** ·
+sha256 `5be8ad051b4c4696…0932c5` ·
+[in the tree](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) ·
+[all downloads](https://github.com/Ak1ra00/cc-Q/releases)
 
-That file is the **M0 baseline** — upstream 1.5.2Q rebuilt from this tree and
-signed with dev key 0. **None of the screens below are in it yet**; it behaves as
-a normal Coldcard that warns about unofficial firmware on every boot. Read
-[Read this first](#read-this-first) before flashing it anywhere.
+The current build, with all seven apps in it. Q only. Check it before you flash
+it — `cd releases/cc-Q && sha256sum -c SHA256SUMS`.
+
+**It has never been run on a Q.** The code is tested and it executes under the
+device's own MicroPython, but no screen has been drawn on real hardware. Flash it
+onto a device you are willing to wipe, and read the warnings below first.
 
 ## What it looks like
 
@@ -56,9 +57,9 @@ a normal Coldcard that warns about unofficial firmware on every boot. Read
 
 These are rendered from the Q's own font data at the panel's real geometry —
 320×240, a 34×10 character grid of 9×22px cells — so the line lengths are the
-line lengths you get. **They are the plan, not the current build:** the firmware
-published below is the M0 baseline and contains none of this yet. Regenerate them
-any time with `python3 misc/dq-screens/render.py`.
+line lengths you get. All seven apps are in the download above; what is not yet
+proven is how these screens behave under a finger on a real device. Regenerate
+the images any time with `python3 misc/dq-screens/render.py`.
 
 ## Read this first
 
@@ -122,69 +123,43 @@ on first run rather than burying it here:
 
 <img src="docs/img/screen-first-run.png" width="360" alt="First run screen: explains a device key was made from the hardware TRNG and lives behind your PIN, then warns in amber that a wipe takes the vault, journal and codes with it unless exported.">
 
-## Status
+## Where this is up to
 
-**M0-M6 are written. None of it has run on a device yet.**
+All seven apps are written. **None of their screens has been drawn on a real Q
+yet** — so treat this as a working draft, not a finished product.
 
-| milestone | what | state |
-|---|---|---|
-| **M0** | Fork, Q1 build, signable DFU, clock finding | **done** |
-| **M1** | Theme layer, app registry, home screen | **code complete** |
-| **M2** | Key modes and the encrypted record store | **code complete** |
-| **M3** | Vault, stored mode | **code complete** |
-| **M4** | Vault, derived mode (BIP-85, seed present) | **code complete** |
-| **M5** | Journal | **code complete** |
-| **M6** | Codes | **code complete** |
-| M7 | Hide the Bitcoin menus, boot sequence, settings | next |
-| — | recovery, sign, witness, keypad | **code complete** |
+What that means concretely:
 
-Be precise about what "code complete" means here, because it is not the same as
-working:
+| | |
+|---|---|
+| **Tested** | 117 tests: the encrypted store, key derivation, sign-in codes against the RFC vectors, share splitting, and every app's record logic. |
+| **Run for real** | The modules execute under the device's own MicroPython with its real AES, HMAC, secp256k1 and TRNG — not stand-ins. That caught two bugs CPython could not see. |
+| **Not yet done** | Nobody has pressed a key on a Q running this. The screens are unproven. |
+| **Next** | cc-Q becomes the screen you land on, with the Bitcoin menus tucked away behind it. Right now it is one item on the normal Coldcard menu. |
 
-- **Tested**: the record store, key derivation, OTP, the clock rules, share
-  splitting, and each app's record logic — 117 tests, including the RFC 4226 and
-  RFC 6238 vectors.
-- **Compiled**: all 19 modules build under `mpy-cross`, MicroPython's own
-  compiler, not just CPython.
-- **Not yet run**: every screen. The simulator needs SDL2, which was not
-  available where this was built, so no cc-Q UI has been drawn even once. Treat
-  the screens as unproven until someone runs `./simulator.py --q1`.
+The Q has no clock — no RTC, no backup cell, no 32.768 kHz crystal — so the date
+is unknown at every boot. That is why the journal asks you what day it is and why
+sign-in codes fall back to HOTP. The evidence is in [`SPEC.md`](SPEC.md).
 
-M0 answered the question two later milestones depend on — **does the Q keep
-wall-clock time across a power cycle?** It does not, and it has no wall clock
-while running either: the RTC is compiled out of the port, there is no 32.768 kHz
-crystal or backup cell on the board, and file timestamps come from a constant baked
-in at build time. The evidence is in [`SPEC.md`](SPEC.md) under Findings. It is why
-the journal confirms the date with you, and why codes default to HOTP with a QR
-resync flow for TOTP.
-
-The plan lives in [`SPEC.md`](SPEC.md), the backlog in
+The plan and its milestones live in [`SPEC.md`](SPEC.md), the backlog in
 [`FEATURES.md`](FEATURES.md), and the rules the code is held to in
 [`CLAUDE.md`](CLAUDE.md).
 
-## Firmware
+## Builds
 
-The published build is the **M0 baseline**: upstream `2026-09-03T1540-v1.5.2Q`
-rebuilt from this tree and signed with dev key 0. It proves the toolchain and
-gives every later build something to diff against — **it contains no cc-Q app
-yet**, so a Q flashed with it behaves as a normal Coldcard that warns about
-unofficial firmware. The first build worth installing for its own sake arrives
-with M1.
+| file | what is in it | sha256 |
+|---|---|---|
+| [`cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) | **current.** All seven apps, on upstream 1.5.2Q. | `5be8ad051b4c4696…0932c5` |
+| [`2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu`](releases/cc-Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu) | Upstream 1.5.2Q rebuilt, unchanged. The toolchain proof, kept so later builds can be diffed against it. | `86868b47…7a3d61` |
 
-| file | version | target | key | sha256 |
-|---|---|---|---|---|
-| [`2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu`](releases/cc-Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu) | 1.5.2Q (baseline) | Q (`hw_compat 0x10`) | dev key 0 | `86868b477a004c50c1dbb6c8497006206560ad89002124bc945ef9905e7a3d61` |
+Both are Q only (`hw_compat 0x10`) and signed with the public developer key 0,
+so both show the unofficial-firmware warning on every boot. Neither is signed by
+Coinkite and neither ever will be.
 
-Download it from the tree above with GitHub's **Download raw file** button, or from
-the [release page](https://github.com/Ak1ra00/cc-Q/releases/tag/2026-09-03T1540-v1.5.2Q).
-Same bytes either way. Check it before it goes anywhere near hardware:
-
-```shell
-cd releases/cc-Q && sha256sum -c SHA256SUMS
-```
-
-`SHA256SUMS` is not PGP-signed. Upstream's `releases/signatures.txt` covers
-Coinkite's official binaries only and says nothing about this file.
+`SHA256SUMS` in `releases/cc-Q/` covers both. It is not PGP-signed: it ties the
+bytes to this repository and claims nothing more. Upstream's
+`releases/signatures.txt` covers Coinkite's official binaries only and says
+nothing about these files.
 
 ### Flashing, when you decide to
 
