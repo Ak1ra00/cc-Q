@@ -6,10 +6,20 @@ from dq.apps import APPS, find
 from charcodes import KEY_CANCEL, KEY_HOME
 
 
+_themed = False
+
+
 async def run():
     from glob import dis
     from ux import ux_wait_keydown
     from dq.session import today_or_none
+
+    # Recolour once, here rather than at import: the palette swap is global and
+    # should not happen as a side effect of a module being frozen into the image.
+    global _themed
+    if not _themed:
+        theme.apply()
+        _themed = True
 
     while True:
         dis.clear()

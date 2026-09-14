@@ -15,7 +15,7 @@ only**. Not affiliated with, endorsed by, or supported by Coinkite.
 <a href="https://github.com/Ak1ra00/cc-Q/raw/main/releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu"><img src="docs/img/download-dfu.png" width="300" alt="Download cc-Q 0.1 for the Coldcard Q"></a>
 
 **[Download `cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](https://github.com/Ak1ra00/cc-Q/raw/main/releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu)** ·
-sha256 `5be8ad051b4c4696…0932c5` ·
+sha256 `ca655e8b0535d674…ff82c0` ·
 [browse it](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) ·
 [older builds](releases/cc-Q)
 
@@ -154,7 +154,7 @@ The plan and its milestones live in [`SPEC.md`](SPEC.md), the backlog in
 
 | file | what is in it | sha256 |
 |---|---|---|
-| [`cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) | **current.** All seven apps, on upstream 1.5.2Q. | `5be8ad051b4c4696…0932c5` |
+| [`cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) | **current.** All seven apps, on upstream 1.5.2Q. | `ca655e8b0535d674…ff82c0` |
 | [`2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu`](releases/cc-Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu) | Upstream 1.5.2Q rebuilt, unchanged. The toolchain proof, kept so later builds can be diffed against it. | `86868b47…7a3d61` |
 
 Both are for the Q only and both are signed with the published developer key, so
