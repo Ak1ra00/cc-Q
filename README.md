@@ -1,298 +1,220 @@
-# Security Advisory
+# cc-Q
 
-- Versions from 2021 to July 2026 had a bug which produced poor entropy.
-- Any secrets generated on a COLDCARD in that period should be regenerated and 
-  funds moved on chain **immediately**.
-- Master seeds can only be trusted from releases after these levels:
-    - 5.6.0 (Mk4, MK5) 
-    - 1.5.0Q (Q1) 
-    - 4.2.0 (Mk3)
-    - 6.6.0 (Edge Mk/Q)
-- Using a BIP-39 passphrase mitigates some of the risk, although it relies
-  on the entropy your passphrase adds. Dice rolls introduced into the secret
-  provide 2.5 bits of entropy per roll.
-- [Blog post and updates](https://blog.coinkite.com/coldcard-mk3-seed-generation-warning/)
-- [Technical background on the bug](https://blog.coinkite.com/entropy-technical-backgrounder/)
+Custom firmware for the **Coldcard Q**. It takes the Bitcoin workflow out of the
+way and puts a daily-use personal terminal behind the device PIN instead: a
+password vault, sign-in codes, and an encrypted journal.
 
----
+The hardware is the reason. A Coldcard Q is a secure element, a real keyboard, a
+screen, a camera, NFC, and no radio of any kind — a good body for secrets that
+should never touch a network. cc-Q keeps the security model and replaces the
+application.
 
-# COLDCARD Hardware Wallet
+Built on [Coldcard/firmware](https://github.com/Coldcard/firmware), **Q1 target
+only**. Not affiliated with, endorsed by, or supported by Coinkite.
 
-Coldcard is an Affordable, Ultra-secure & Verifiable Hardware Wallet for Bitcoin.
-Get yours at [Coldcard.com](http://coldcard.com)
+> ### Read this first
+>
+> - cc-Q is signed with the **public developer key (key 0)** from the upstream
+>   tree. A Q running it shows the unofficial-firmware warning and a long delay on
+>   **every** boot, and the *genuine* light stays **red** until official Coinkite
+>   firmware is reinstalled. That is the expected state, not a fault.
+> - **Keep an official Coinkite `.dfu` for your Q on a spare microSD**, from
+>   [coldcard.com/downloads](https://coldcard.com/downloads). That card is the way
+>   back. Set it aside before you flash anything from here.
+> - Treat any device you flash as a **testing device**.
+> - Q only. The image refuses to install on Mk3, Mk4, or Mk5 (`hw_compat 0x10`).
 
-[Follow @COLDCARDwallet on Twitter](https://twitter.com/coldcardwallet) to keep up
-with the latest updates and security alerts.
+## What it is
 
-![coldcard logo](https://coldcard.com/static/images/coldcard-logo-nav.png)
+Three apps, all encrypted under keys that never leave the device, all reachable
+from one home screen:
 
-![Mk5 coldcard picture front](https://coldcard.com/static/images/mk5-front.png)
+- **vault** — passwords, searchable by service and login. Each entry has a number
+  that never changes and never gets reused. That number is what you write on a
+  paper card; the card itself carries no passwords.
+- **codes** — TOTP and HOTP sign-in codes, enrolled by scanning the QR the service
+  shows you.
+- **journal** — one encrypted entry per day, written on the device's own keyboard.
 
-## Quick Links
+Behind them: a green-phosphor CRT theme applied globally, a plugin registry so the
+home screen never hardcodes an app list, and an app-scoped record store on microSD
+with a schema version and atomic writes.
 
-- [Latest firmware changes and updates](releases/ChangeLog.md)
-- [PGP signature file](releases/signatures.txt)
-- [Firmware binaries](https://coldcard.com/downloads)
+### No seed required
 
-## Reproducible Builds
+cc-Q runs fully **without a BIP39 seed**, and that is the supported default. On
+first run it generates a 32-byte device key from the hardware TRNG and keeps it in
+the settings blob, which is already encrypted under a key tied to your PIN and the
+secure element. Each app gets its own subkey derived from that.
 
-To have confidence this source code tree is the same as the binary on your device,
-you can rebuild it from source and get **exactly the same bytes**. This process
-has been automated using Docker. Steps are as follows:
+A seed is optional and changes exactly one thing: the vault can additionally offer
+passwords derived from `(seed, index)` via BIP-85, which need no stored ciphertext.
+Journal, codes, and the store itself never use it.
 
-1. Install [Docker](https://www.docker.com) and start it.
-2. Install [make (GNUMake)](https://www.gnu.org/software/make/) if you don't already have it.
-3. Checkout a specific version of the code, and start the process.
+**The consequence, stated plainly: if the device is wiped, seedless data is gone
+unless you exported it.** Derived vault entries survive a wipe as long as the seed
+and the index list survive. Stored entries, journal, and codes do not. This is the
+trade for not requiring a seed, and it is also why the vault has an export.
 
-    ```shell
-    git clone https://github.com/Coldcard/firmware.git
-    cd firmware
-    # DOWNLOAD https://coldcard.com/downloads
-    # get a copy of binary into ./releases/2026-03-05T2052-v5.5.0-mk-coldcard.dfu
-    git checkout 2026-03-05T2052-v5.5.0
-    cd stm32
-    make -f MK4-Makefile repro
-    ```
+## Status
 
-4. At the end of the process a clear confirmation message is shown, or the differences.
-5. Build products can be found `firmware/stm32/built`.
-6. If you do not trust the results of `make repro` refer to `docs/notes-on-repro.md`
-   which breaks down the process.
-7. Process for Q firmware is the same, but change `MK4-Makefile` in last step to `Q1-Makefile`
+**M0 — groundwork: done.** M1 is next.
 
-## Long-Lived Branches
+| milestone | what | state |
+|---|---|---|
+| **M0** | Fork, Q1 build, signable DFU, simulator, clock finding | **done** \* |
+| M1 | Theme layer, app registry, home screen | next |
+| M2 | Key modes and the encrypted record store | |
+| M3 | Vault, stored mode | |
+| M4 | Vault, derived mode (BIP-85, seed present) | |
+| M5 | Journal | |
+| M6 | Codes | |
+| M7 | Polish: boot sequence, first-run screen, settings | |
 
-We are now maintaining two branches: `master` and `edge`.
+\* M0's placeholder screen never landed in the tree — there is no `shared/dq/`
+yet. M1's home screen replaces it outright, so it is folded into M1 rather than
+built twice.
 
-"Edge" will contain features that may not be ready for prime time,
-such as Taproot or Miniscript. Our standards for releasing new Edge
-versions are lower, so we can iterate faster and get these advancements
-out to other developers.
+M0 answered the question two later milestones depend on — **does the Q keep
+wall-clock time across a power cycle?** It does not, and it has no wall clock
+while running either: the RTC is compiled out of the port, there is no 32.768 kHz
+crystal or backup cell on the board, and file timestamps come from a constant baked
+in at build time. The evidence is in [`SPEC.md`](SPEC.md) under Findings. It is why
+the journal will confirm the date with you, and why codes default to HOTP with a
+QR resync flow for TOTP.
 
-Q and Mk series share the same code base. Individual files that are added,
-or removed, can be see in differences between `shared/manifest_mk4.py`
-and `shared/manifest_q1.py`. Common files are in `shared/manifest.py`.
-Firmware built for Mk5, supports the Mk4 without any functional differences.
+The plan lives in [`SPEC.md`](SPEC.md), the backlog in
+[`FEATURES.md`](FEATURES.md), and the rules the code is held to in
+[`CLAUDE.md`](CLAUDE.md).
 
+## Firmware
 
-## Check-out and Setup
+The published build is the **M0 baseline**: upstream `2026-09-03T1540-v1.5.2Q`
+rebuilt from this tree and signed with dev key 0. It proves the toolchain and
+gives every later build something to diff against — **it contains no cc-Q app
+yet**, so a Q flashed with it behaves as a normal Coldcard that warns about
+unofficial firmware. The first build worth installing for its own sake arrives
+with M1.
 
-**NOTE** This is the `master` branch and covers the latest hardware (Mk and Q).
-See branch `v4-legacy` for firmware which supports only Mk3/Mk2 and earlier.
+| file | version | target | key | sha256 |
+|---|---|---|---|---|
+| [`2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu`](releases/cc-Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu) | 1.5.2Q (baseline) | Q (`hw_compat 0x10`) | dev key 0 | `86868b477a004c50c1dbb6c8497006206560ad89002124bc945ef9905e7a3d61` |
 
-Do a checkout, recursively, to get all the submodules:
-
-```shell
-git clone --recursive https://github.com/Coldcard/firmware.git
-```
-
-Already checked-out and getting git errors? Do this:
-
-```shell
-git fetch
-git reset --hard origin/master
-```
-
-Alternatively, to get the latest release, you checkout a tagged branch:
-
-```shell
-git clone https://github.com/Coldcard/firmware.git
-cd firmware
-git checkout $(git describe --match "20*" --abbrev=0)
-git submodule update --init --recursive
-```
-
-Do not use a path with any spaces in it. The Makefiles do not handle
-that well and we're not planning to fix it.
-
-Keep in mind that python requirements may change between versions,
-so at the top level, do this command:
+Download it from the tree above with GitHub's **Download raw file** button, or from
+the [release page](https://github.com/Ak1ra00/cc-Q/releases/tag/2026-09-03T1540-v1.5.2Q).
+Same bytes either way. Check it before it goes anywhere near hardware:
 
 ```shell
-pip install -r requirements.txt
+cd releases/cc-Q && sha256sum -c SHA256SUMS
 ```
 
-### macOS
+`SHA256SUMS` is not PGP-signed. Upstream's `releases/signatures.txt` covers
+Coinkite's official binaries only and says nothing about this file.
 
-[Python 3.5 or higher](https://www.python.org) and [Homebrew](https://brew.sh) is required.
+### Flashing, when you decide to
 
-If working on an ARM-based MacOS system, you may want to create a
-new shell with `arch -x86_64 bash` before starting, or continuing
-to work on this source tree.
+Flashing is a deliberate step you take, not part of any build routine — the
+simulator is where cc-Q gets exercised. When you do want it on hardware: copy the
+`.dfu` to a FAT32 microSD, then on the Q go **Advanced/Tools → Upgrade Firmware →
+From MicroSD**, check the version on screen, and approve. The Q reboots and
+installs. The first boot afterwards shows the unofficial-firmware warning and a
+long delay; that is key 0 doing its job.
 
-#### Setup and run the desktop simulator
+To go back: install the matching official `.dfu` from
+[coldcard.com/downloads](https://coldcard.com/downloads) the same way. Coldcard
+refuses downgrades below the installed version's timestamp, so use that version or
+newer. The genuine light goes green again on the next PIN entry.
+[`docs/upgrade-recovery.md`](docs/upgrade-recovery.md) covers an interrupted
+upgrade.
 
-You'll probably need to install at least these packages:
+## Running it
+
+The simulator is the primary target. Everything must run clean there first, and
+you do not need a Q to work on cc-Q.
 
 ```shell
-brew install sdl2 xterm swig
-brew install --cask xquartz gcc-arm-embedded
+git clone --recursive https://github.com/Ak1ra00/cc-Q.git
+cd cc-Q
+python3 -m venv ENV && source ENV/bin/activate
+pip install -U pip setuptools && pip install -r requirements.txt
+
+cd unix && make setup && make ngu-setup && make && ./simulator.py --q1
 ```
 
-Used to be these were needed as well:
+Needs SDL2. Per-platform package lists for macOS and Linux are in
+[`docs/upstream-README.md`](docs/upstream-README.md).
+
+### Building the firmware
+
+Built with the Arm GNU Toolchain 13.3.rel1 (`arm-none-eabi-gcc`) and Python 3.11:
 
 ```shell
-brew tap PX4/px4
-brew search px4/px4/gcc-arm-none-eabi
+pip install --editable cli            # provides `signit`, used by the Makefiles
+cd stm32
+make -f Q1-Makefile setup
+make -f Q1-Makefile CFLAGS_EXTRA=-Wno-error=dangling-pointer
+make -f Q1-Makefile firmware-signed.dfu
 ```
 
-Then install the newest version, currently 83:
+`CFLAGS_EXTRA=-Wno-error=dangling-pointer` is only needed on GCC 13+, which
+promotes that warning to an error inside bundled MicroPython. Check what you built
+before it leaves your machine:
 
 ```shell
-brew install px4/px4/gcc-arm-none-eabi-83
+signit check stm32/firmware-signed.bin    # prints the version and `Signed by pubkey=0`
 ```
 
-You may need to `brew upgrade gcc-arm-embedded` because we need 10.2 or higher.
+An unmodified checkout reproduces the published file byte for byte apart from the
+build timestamp in `stm32/COLDCARD_Q1/file_time.c`. Coinkite's deterministic Docker
+flow (`make -f Q1-Makefile repro`, see [`docs/notes-on-repro.md`](docs/notes-on-repro.md))
+is for verifying *official* binaries against *upstream* source.
 
-Then:
+### Tests
 
 ```shell
-brew install automake autogen virtualenv
-virtualenv -p python3 ENV
-source ENV/bin/activate (or source ENV/bin/activate.csh based on shell preference)
-pip install -U pip
-pip install -r requirements.txt
-# Work around warnings in bundled MicroPython under current Apple Clang.
-MPY_CFLAGS='-Wno-unused-but-set-variable -Wno-array-bounds -Wno-error=unknown-warning-option -Wno-error=deprecated-non-prototype -Wno-error=bitwise-instead-of-logical -Wno-unterminated-string-initialization -Wno-gnu-folding-constant'
-make -C external/micropython/mpy-cross CFLAGS_EXTRA="$MPY_CFLAGS"
-cd unix
-make setup CFLAGS_EXTRA="$MPY_CFLAGS"
-make ngu-setup
-make CFLAGS_EXTRA="$MPY_CFLAGS"
-./simulator.py
+cd testing && py.test dq/          # cc-Q tests
 ```
 
-You may need to reboot to avoid a `DISPLAY is not set` error.
+Upstream's suite under `testing/` still applies to upstream code and needs a
+running simulator.
 
-The next time you want to run the simulator, you can simply do
+## Layout
 
-```shell
-source ENV/bin/activate && cd unix && ./simulator.py
+cc-Q code lives in one namespace, `shared/dq/`, so that upstream can still be
+merged and so a new app is cheap to add:
+
+```
+shared/dq/
+    theme.py            palette, header and footer bars, list rendering
+    keys.py             device key, per-app subkeys, optional BIP-85
+    store.py            encrypted per-app record file, atomic write, card mirror
+    apps/__init__.py    DQApp base class, @register_app, APPS registry
+    apps/home.py        home screen — reads the registry, knows no app
+    apps/vault.py  apps/journal.py  apps/codes.py
 ```
 
-#### Building the firmware
+Adding an app is four steps: write the class, decorate it with `@register_app`, add
+it to `manifest_q1.py`, add tests in `testing/dq/`. Storage, encryption subkey,
+theming, and the home screen slot come from the framework. Any file we touch
+*outside* `shared/dq/` is logged in [`PATCHES.md`](PATCHES.md) — that list is the
+whole surface where an upstream merge can conflict.
 
-- `cd ../cli; pip install --editable .`
-- `cd ../stm32; make setup && make; make firmware-signed.dfu`
-- The resulting file, `firmware-signed.dfu` can be loaded directly onto a Coldcard, using this
-  command (already installed based on above)
-- `ckcc upgrade firmware-signed.dfu`
+Everything else is upstream's: `shared/` (application code), `stm32/` (embedded
+build, bootloaders, signing), `unix/` (simulator), `testing/`, `external/`,
+`docs/`, `graphics/`, `hardware/`, `cli/`.
 
-Which looks like this:
+Two boundaries that are not negotiable: the bootloader in `stm32/bootloader/` is
+signed by Coinkite, runs first, and is never touched; the PIN entry and login
+sequence are never modified, because a crash there bricks the device with no
+recovery path.
 
-```shell
-[ENV] [firmware/stm32 42] ckcc upgrade firmware-signed.dfu  
-675328 bytes (start @ 293) to send from 'firmware-signed.dfu'
-Uploading  [##########--------------------------]   29%  0d 00:01:04
-```
+## License and support
 
-#### Big Sur Issues
+Code is © Coinkite Inc. under the terms in [`COPYING-CC`](COPYING-CC) —
+source-available, not OSI open source. That license is kept intact and this fork
+carries the same terms.
 
-`defaults write org.python.python ApplePersistenceIgnoreState NO` will suppress a warning about `Python[22580:10101559] ApplePersistenceIgnoreState: Existing state will not be touched. New state will be written to...`
-
-See <https://bugs.python.org/issue32909>
-
-### Linux
-
-All steps you need to install and run the Coldcard simulator on Ubuntu 20.04:
-
-
-```shell
-# Install (system) requirements, tools and libraries
-apt install build-essential git python3 python3-pip libudev-dev gcc-arm-none-eabi libffi-dev xterm swig libpcsclite-dev python-is-python3 autoconf libtool python3-venv
-
-# Get sources, this takes a long time (because of external libraries), then open
-git clone --recursive https://github.com/Coldcard/firmware.git
-cd firmware
-
-# Ubuntu 24.04 only; omit this assignment on earlier releases
-MPY_CFLAGS='-Wno-error=dangling-pointer -Wno-error=enum-int-mismatch'
-
-
-# Create Python virtual environment and activate it
-python3 -m venv ENV  # or virtualenv -p python3 ENV
-source ENV/bin/activate
-
-# Install dependencies
-pip install -U pip setuptools
-pip install -r requirements.txt #general requirements
-pip install pysdl2-dll # Ubuntu needs this dependency
-
-# Build the Coldcard simulator
-make -C external/micropython/mpy-cross CFLAGS_EXTRA="$MPY_CFLAGS"
-cd unix
-make setup CFLAGS_EXTRA="$MPY_CFLAGS"
-make ngu-setup
-make CFLAGS_EXTRA="$MPY_CFLAGS"
-
-# Run the simulator in the active virtualenv
-./simulator.py
-
-# Later, if you want to run it (after a reboot). This assumes you extracted the git repo in ~ (home)
-cd ~/firmware
-source ENV/bin/activate
-cd unix
-./simulator.py
-```
-
-Also make sure that you have your python3 symlinked to python.
-
-## Code Organization
-
-Top-level dirs:
-
-`shared`
-
-- shared code between desktop test version and real-deal
-- expected to be largely in python, and higher-level
-- code exclusive to the Mk4 or Mk5 will be listed in `manifest_mk4.py`, and
-  to the Q will be listed in `manifest_q1.py`
-
-`unix`
-
-- unix (macOS) version for testing/rapid dev
-- this is a simulator for the product
-
-`testing`
-
-- test cases and associated data
-
-`stm32`
-
-- embedded binaries (and building), for actual product hardware
-- final target is a binary file for loading onto hardware
-
-`external`
-
-- code from other projects, ie. the dreaded submodules
-
-`graphics`
-
-- images which ship as part of the final product (icons)
-
-`stm32/bootloader`
-
-- 32k of factory-set code that you cannot change (Mk3)
-- however, you can inspect what code is on your coldcard and compare to this.
-
-`stm32/mk4-bootloader`
-`stm32/q1-bootloader`
-
-- 128k of factory-set code that you cannot change
-- however, you can inspect what code is on your coldcard and compare to this.
-
-`hardware`
-
-- schematic and bill of materials for the Coldcard, all versions.
-
-`unix/work/...`
-
-- `/MicroSD/*` files on "simulated" microSD card
-
-- `/VirtDisk/*` simulated emulated virtual Disk files.
-
-- `/settings/*.aes` persistent settings for Simulator
-
-## Support
-
-Found a bug? Email: support@coinkite.com
+Do **not** take cc-Q problems to Coinkite support; they did not build this and cannot
+help with it. Upstream Coldcard bugs belong at
+[Coldcard/firmware](https://github.com/Coldcard/firmware). Anything about this
+fork belongs in [its own issues](https://github.com/Ak1ra00/cc-Q/issues).
