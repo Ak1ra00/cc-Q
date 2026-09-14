@@ -20,6 +20,56 @@ def test_ids_are_never_reused(settings):
     assert recs[-1]['id'] == 4, 'id 2 must never come back'
 
 
+def test_delete_does_not_free_the_id(settings):
+    """A reused id would point a paper card at the wrong account, and would
+    regenerate a different derived password."""
+    from dq.apps import vault
+    recs = [vault.new_entry([], 'a', 'a@x')]
+    recs.append(vault.new_entry(recs, 'b', 'b@x'))
+    assert recs[1]['id'] == 2
+
+    vault.delete_entry(recs, recs[1])
+    assert len(vault.live(recs)) == 1
+    assert vault.next_id(recs) == 3, 'id 2 stays claimed by its tombstone'
+    assert recs[0]['id'] == 1
+
+
+def test_deleting_the_newest_still_does_not_free_its_id(settings):
+    "the case a high-water mark would get wrong"
+    from dq.apps import vault
+    recs = [vault.new_entry([], 'a', 'a@x')]
+    recs.append(vault.new_entry(recs, 'b', 'b@x'))
+    vault.delete_entry(recs, recs[-1])
+    assert vault.next_id(recs) == 3
+
+
+def test_delete_leaves_nothing_behind_but_the_number(settings):
+    from dq.apps import vault
+    rec = vault.new_entry([], 'protonmail', 'akira@proton.me')
+    rec['secret'] = 'SEALEDCIPHERTEXT'
+    recs = [rec]
+    vault.delete_entry(recs, rec)
+    assert recs[0] == {'id': 1, 'deleted': True}
+
+
+def test_deleted_entries_are_hidden_everywhere(settings):
+    from dq.apps import vault
+    recs = [vault.new_entry([], 'protonmail', 'a@b')]
+    recs.append(vault.new_entry(recs, 'github', 'c@d'))
+    vault.delete_entry(recs, recs[0])
+    assert [r['service'] for r in vault.search(recs, '')] == ['github']
+    assert vault.search(recs, 'proton') == []
+    assert len(vault.export_lines(recs)) == 2      # header + one live entry
+
+
+def test_edit_never_touches_id_or_source(settings):
+    from dq.apps import vault
+    rec = vault.new_entry([], 'protonmail', 'a@b', source='derived')
+    vault.edit_entry(rec, service='proton', login='c@d')
+    assert rec['service'] == 'proton' and rec['login'] == 'c@d'
+    assert rec['id'] == 1 and rec['source'] == 'derived'
+
+
 def test_search_matches_service_and_login(settings):
     from dq.apps import vault
     recs = [{'id': 1, 'service': 'protonmail', 'login': 'akira@proton.me'},

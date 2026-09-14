@@ -83,33 +83,82 @@ class Journal(DQApp):
         today = today_or_none()
         if today is None:
             return ('date unknown', False)
-        try:
-            rec = find_day(self.store().load(), today)
-        except Exception:
-            return ('unreadable', True)
+        records, status = self.load_for_home()
+        if status:
+            return status
+        rec = find_day(records, today)
         if rec and word_count(rec.get('text', '')):
             return ('%d words' % word_count(rec['text']), False)
         return ('not written', True)
 
     async def start(self):
-        from dq.session import ask_today
-        from dq.ui import edit_text, show_error
-        today = await ask_today()
-        if today is None:
-            return
+        from dq import ui
         try:
             records = self.store().load()
         except Exception as exc:
-            await show_error('journal', exc)
+            await ui.show_error('journal', exc)
             return
 
+        while True:
+            pick = await ui.menu_choice('journal', [
+                ("write today's entry", 'write'),
+                ('the week', 'week'),
+                ('export', 'export'),
+                ('import an export', 'import')])
+            if pick is None:
+                return
+            try:
+                if pick == 'write':
+                    await self.write(records)
+                elif pick == 'week':
+                    await self.show_week(records)
+                elif pick == 'export':
+                    await ui.export_records('journal', records, 'journal')
+                elif pick == 'import':
+                    records, changed = await ui.import_records('journal', records, 'date')
+                    if changed:
+                        self.store().save(records)
+            except Exception as exc:
+                await ui.show_error('journal', exc)
+
+    async def write(self, records):
+        from dq.session import ask_today
+        from dq.ui import edit_text
+        today = await ask_today()
+        if today is None:
+            return
         rec = find_day(records, today)
         text = await edit_text('journal  %s' % today, (rec or {}).get('text', ''),
                                lines=VISIBLE_LINES)
         if text is None:
             return
         put_day(records, today, text)
-        try:
-            self.store().save(records)
-        except Exception as exc:
-            await show_error('journal', exc)
+        self.store().save(records)
+
+    async def show_week(self, records):
+        from glob import dis
+        from dq import theme
+        from dq.session import today_or_none
+        from dq.ui import _key, BACK_KEYS
+
+        today = today_or_none()
+        if today is None:
+            from ux import ux_show_story
+            await ux_show_story('The week view needs to know what day it is.\n\n'
+                                'Write an entry first and confirm the date.',
+                                title='week')
+            return
+
+        days = week(records, today)
+        biggest = max([w for _, w, _ in days] + [1])
+        dis.clear()
+        theme.header(dis, 'journal  week', '%d days' % len(days_written(records)))
+        for n, (date, words, is_today) in enumerate(days):
+            bar = '\u2588' * max(0, (words * 18) // biggest)
+            label = date[-2:] + (' <' if is_today else '  ')
+            theme.body(dis, n, '%s %s' % (label, bar), x=1, dark=not is_today)
+        theme.footer(dis, 'longest run %d days' % longest_run(records), 'X back')
+        dis.show()
+        while True:
+            if await _key() in BACK_KEYS:
+                return

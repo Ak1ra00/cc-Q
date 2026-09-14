@@ -57,10 +57,10 @@ class Keypad(DQApp):
 
     def home_line(self):
         from dq.hid import enabled
-        try:
-            n = len(self.store().load())
-        except Exception:
-            return ('unreadable', True)
+        records, status = self.load_for_home()
+        if status:
+            return status
+        n = len(records)
         if n and not enabled():
             return ('%d, USB kbd off' % n, True)
         return ('%d snippets' % n if n != 1 else '1 snippet', False)

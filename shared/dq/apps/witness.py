@@ -98,10 +98,10 @@ class Witness(DQApp):
     hotkey = 'w'
 
     def home_line(self):
-        try:
-            n = len(self.store().load())
-        except Exception:
-            return ('unreadable', True)
+        records, status = self.load_for_home()
+        if status:
+            return status
+        n = len(records)
         return ('%d files' % n if n != 1 else '1 file', False)
 
     async def start(self):

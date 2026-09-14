@@ -81,10 +81,9 @@ class Codes(DQApp):
     hotkey = 'c'
 
     def home_line(self):
-        try:
-            records = self.store().load()
-        except Exception:
-            return ('unreadable', True)
+        records, status = self.load_for_home()
+        if status:
+            return status
         if not records:
             return ('none enrolled', False)
         if needs_clock(records) and not clock.is_set():
@@ -92,13 +91,32 @@ class Codes(DQApp):
         return ('%d enrolled' % len(records), False)
 
     async def start(self):
-        from dq.ui import show_error
+        from dq import ui
         try:
             records = self.store().load()
         except Exception as exc:
-            await show_error('codes', exc)
+            await ui.show_error('codes', exc)
             return
-        await _screen(self, records)
+
+        while True:
+            pick = await ui.menu_choice('codes', [
+                ('show my codes', 'show'),
+                ('export', 'export'),
+                ('import an export', 'import')])
+            if pick is None:
+                return
+            try:
+                if pick == 'show':
+                    await _screen(self, records)
+                elif pick == 'export':
+                    await ui.export_records('codes', records,
+                                            'sign-in code secrets')
+                elif pick == 'import':
+                    records, changed = await ui.import_records('codes', records, 'secret')
+                    if changed:
+                        self.store().save(records)
+            except Exception as exc:
+                await ui.show_error('codes', exc)
 
     def enroll(self, records, uri):
         "returns the new record; raises ValueError on anything unparseable"

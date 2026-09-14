@@ -28,6 +28,28 @@ class DQApp:
         from dq.store import RecordStore
         return RecordStore(self.name)
 
+    def load_for_home(self):
+        """Records for a home_line, or a status to show instead.
+
+        Returns (records, None) or (None, (text, is_alert)). "No card" and
+        "this file is damaged" are very different things -- one means put a card
+        in, the other means something is wrong with your data -- so they never
+        share a message.
+        """
+        try:
+            from files import CardMissingError
+        except ImportError:
+            CardMissingError = None
+        try:
+            return (self.store().load(), None)
+        except Exception as exc:
+            if CardMissingError and isinstance(exc, CardMissingError):
+                return (None, ('no card', False))
+            from dq.store import BadMAC
+            if isinstance(exc, BadMAC):
+                return (None, ('damaged file', True))
+            return (None, ('unreadable', True))
+
 
 def register_app(cls):
     "Decorator. Collisions raise at import time, not when someone presses a key."
