@@ -12,12 +12,12 @@ application.
 Built on [Coldcard/firmware](https://github.com/Coldcard/firmware), **Q1 target
 only**. Not affiliated with, endorsed by, or supported by Coinkite.
 
-<a href="https://github.com/Ak1ra00/cc-Q/releases/download/v0.1/cc-Q-0.1-2026-09-14-q1-devkey0.dfu"><img src="docs/img/download-dfu.png" width="300" alt="Download cc-Q 0.1 for the Coldcard Q"></a>
+<a href="https://github.com/Ak1ra00/cc-Q/raw/main/releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu"><img src="docs/img/download-dfu.png" width="300" alt="Download cc-Q 0.1 for the Coldcard Q"></a>
 
-**[Download `cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](https://github.com/Ak1ra00/cc-Q/releases/download/v0.1/cc-Q-0.1-2026-09-14-q1-devkey0.dfu)** ·
+**[Download `cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](https://github.com/Ak1ra00/cc-Q/raw/main/releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu)** ·
 sha256 `5be8ad051b4c4696…0932c5` ·
-[in the tree](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) ·
-[all downloads](https://github.com/Ak1ra00/cc-Q/releases)
+[browse it](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) ·
+[older builds](releases/cc-Q)
 
 The current build, with all seven apps in it. Q only. Check it before you flash
 it — `cd releases/cc-Q && sha256sum -c SHA256SUMS`.
