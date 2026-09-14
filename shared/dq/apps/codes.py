@@ -91,32 +91,14 @@ class Codes(DQApp):
         return ('%d enrolled' % len(records), False)
 
     async def start(self):
+        "Opens on the codes themselves. Export and import are function keys."
         from dq import ui
         try:
             records = self.store().load()
         except Exception as exc:
             await ui.show_error('codes', exc)
             return
-
-        while True:
-            pick = await ui.menu_choice('codes', [
-                ('show my codes', 'show'),
-                ('export', 'export'),
-                ('import an export', 'import')])
-            if pick is None:
-                return
-            try:
-                if pick == 'show':
-                    await _screen(self, records)
-                elif pick == 'export':
-                    await ui.export_records('codes', records,
-                                            'sign-in code secrets')
-                elif pick == 'import':
-                    records, changed = await ui.import_records('codes', records, 'secret')
-                    if changed:
-                        self.store().save(records)
-            except Exception as exc:
-                await ui.show_error('codes', exc)
+        await _screen(self, records)
 
     def enroll(self, records, uri):
         "returns the new record; raises ValueError on anything unparseable"
@@ -126,6 +108,7 @@ class Codes(DQApp):
 
 
 async def _screen(app, records):
+    from charcodes import KEY_F2, KEY_F3
     "the codes screen, including the greyed state when time is unknown"
     from glob import dis
     from dq import clock
@@ -151,7 +134,7 @@ async def _screen(app, records):
             if not usable and needs_clock(records):
                 theme.body(dis, 6, 'Time is unknown after power off.', x=1)
                 theme.body(dis, 7, 'Scan a time QR to fix.', x=1)
-        theme.footer(dis, 'r resync', '+ enroll   X back')
+        theme.footer(dis, 'r resync  + enroll', 'F2 export  X back')
         dis.show()
 
         ch = await _key()

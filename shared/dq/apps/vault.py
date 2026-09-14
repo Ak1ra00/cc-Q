@@ -153,7 +153,14 @@ class Vault(DQApp):
         return ('%d entries' % n if n != 1 else '1 entry', False)
 
     async def start(self):
+        """Opens on the search screen, as SPEC.md describes it.
+
+        Typing is the fastest path to a password and it is what this app is for,
+        so it is the first thing on screen. New/export/import sit on function
+        keys, which do not collide with typing.
+        """
         from dq import ui
+        from charcodes import KEY_F1, KEY_F2, KEY_F3
         try:
             records = self.store().load()
         except Exception as exc:
@@ -161,39 +168,28 @@ class Vault(DQApp):
             return
 
         while True:
-            pick = await ui.menu_choice('vault', [
-                ('find an entry', 'find'),
-                ('new entry', 'new'),
-                ('export the card list', 'export'),
-                ('import an export', 'import')])
-            if pick is None:
-                return
-            try:
-                if pick == 'find':
-                    await self.browse(records)
-                elif pick == 'new':
-                    if await self.new(records):
-                        self.store().save(records)
-                elif pick == 'export':
-                    await self.export_card(records)
-                elif pick == 'import':
-                    records, changed = await ui.import_records('vault', records, 'id')
-                    if changed:
-                        self.store().save(records)
-            except Exception as exc:
-                await ui.show_error('vault', exc)
-
-    async def browse(self, records):
-        from dq.ui import pick_from_list
-        while True:
-            chosen = await pick_from_list(
+            got = await ui.pick_from_list(
                 'vault', records,
                 line=lambda r: (r.get('service', '?'), str(r.get('id', ''))),
                 match=search,
-                footer='OK open   X back')
-            if chosen is None:
+                footer='F1 new   OK open',
+                funct={KEY_F1: 'new', KEY_F2: 'export', KEY_F3: 'import'})
+            if got is None:
                 return
-            await self.show_entry(records, chosen)
+            try:
+                if got == 'new':
+                    if await self.new(records):
+                        self.store().save(records)
+                elif got == 'export':
+                    await self.export_card(records)
+                elif got == 'import':
+                    records, changed = await ui.import_records('vault', records, 'id')
+                    if changed:
+                        self.store().save(records)
+                else:
+                    await self.show_entry(records, got)
+            except Exception as exc:
+                await ui.show_error('vault', exc)
 
     async def new(self, records):
         "returns True if something was added"
@@ -240,42 +236,42 @@ class Vault(DQApp):
                            filename='dq-vault-card.txt')
 
     async def show_entry(self, records, rec):
-        from dq import ui
+        """Shows the password, as SPEC.md describes it -- that is what you came
+        for. Typing it, renaming and deleting are function keys on that screen.
+        """
+        from dq import ui, hid
+        from charcodes import KEY_F1, KEY_F2, KEY_F3
+
         while True:
-            pick = await ui.menu_choice('#%s %s' % (rec.get('id', ''),
-                                                    rec.get('service', '?')), [
-                ('show the password', 'show'),
-                ('type it over USB', 'type'),
-                ('rename', 'edit'),
-                ('delete', 'delete')])
-            if pick is None:
+            try:
+                pw = password_for(rec, self.store().key())
+            except Exception as exc:
+                await ui.show_error('vault', exc)
+                return
+
+            got = await ui.show_secret(
+                title=rec.get('service', '?'),
+                right='#%s' % rec.get('id', ''),
+                subtitle=rec.get('login', ''),
+                secret=pw,
+                note=rec.get('source', 'stored'),
+                hide_after=AUTO_HIDE,
+                footer='QR  n NFC  F1 type',
+                funct={KEY_F1: 'type', KEY_F2: 'rename', KEY_F3: 'delete'})
+            if got is None:
                 return
             try:
-                if pick == 'show':
-                    await self.reveal(rec)
-                elif pick == 'type':
-                    from dq import hid
-                    await hid.send(password_for(rec, self.store().key()),
-                                   label=rec.get('service'))
-                elif pick == 'edit':
+                if got == 'type':
+                    await hid.send(pw, label=rec.get('service'))
+                elif got == 'rename':
                     if await self.rename(rec):
                         self.store().save(records)
-                elif pick == 'delete':
+                elif got == 'delete':
                     if await self.remove(records, rec):
                         self.store().save(records)
                         return
             except Exception as exc:
                 await ui.show_error('vault', exc)
-
-    async def reveal(self, rec):
-        from dq.ui import show_secret
-        pw = password_for(rec, self.store().key())
-        await show_secret(title=rec.get('service', '?'),
-                          right='#%s' % rec.get('id', ''),
-                          subtitle=rec.get('login', ''),
-                          secret=pw,
-                          note=rec.get('source', 'stored'),
-                          hide_after=AUTO_HIDE)
 
     async def rename(self, rec):
         from ux_q1 import ux_input_text

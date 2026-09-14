@@ -27,11 +27,16 @@ async def show_error(title, exc):
     await ux_show_story(msg, title=title)
 
 
-async def pick_from_list(title, records, line, match, footer='OK open   X back'):
-    """Type-to-filter list. Returns the chosen record, or None on back.
+async def pick_from_list(title, records, line, match, footer='OK open   X back',
+                         funct=None):
+    """Type-to-filter list. This is the app's front door, not a menu item.
 
-    `line(rec)` gives (left, right); `match(records, query)` does the filtering,
-    so each app decides what "matching" means for its own records.
+    Returns the chosen record, None on back, or the tag string of a function key
+    from `funct` ({KEY_F1: 'new', ...}). Records are dicts, so a string return is
+    never ambiguous.
+
+    Function keys rather than letters, because every printable key here is text
+    going into the search box -- which is upstream's idiom too (notes.py).
     """
     from glob import dis
     from charcodes import KEY_CANCEL, KEY_HOME
@@ -66,6 +71,8 @@ async def pick_from_list(title, records, line, match, footer='OK open   X back')
         dis.show()
 
         ch = await _key()
+        if funct and ch in funct:
+            return funct[ch]
         if ch in (KEY_CANCEL, KEY_HOME):
             return None                     # X always leaves, query or not
         elif ch == KEY_DELETE:
@@ -84,7 +91,8 @@ async def pick_from_list(title, records, line, match, footer='OK open   X back')
             idx = top = 0
 
 
-async def show_secret(title, right, subtitle, secret, note='', hide_after=20):
+async def show_secret(title, right, subtitle, secret, note='', hide_after=20,
+                      footer='QR show   n NFC', funct=None):
     """A secret on screen, with a countdown that resets on any keypress.
 
     The countdown is the alert colour because it is the one thing here with a
@@ -106,7 +114,7 @@ async def show_secret(title, right, subtitle, secret, note='', hide_after=20):
             theme.body(dis, 3 + n, chunk, x=1)
         if note:
             dis.text(-1, countdown_row, note, dark=True)
-        theme.footer(dis, 'QR show   n NFC', 'X back')
+        theme.footer(dis, footer, 'X back')
 
     frame()
     dis.show()
@@ -116,7 +124,7 @@ async def show_secret(title, right, subtitle, secret, note='', hide_after=20):
     while True:
         left = utime.ticks_diff(deadline, utime.ticks_ms()) // 1000
         if left <= 0:
-            return
+            return None
 
         if left != last_shown:
             dis.text(1, countdown_row, 'hides in %2ds' % left)
@@ -126,8 +134,10 @@ async def show_secret(title, right, subtitle, secret, note='', hide_after=20):
         ch = await _key(timeout_ms=200)
         if ch is None:
             continue                        # tick
+        if funct and ch in funct:
+            return funct[ch]                # caller acts, then may show us again
         if ch in BACK_KEYS:
-            return
+            return None
         if ch == KEY_QR:
             await show_qr_code(secret, is_alnum=False)
             frame()

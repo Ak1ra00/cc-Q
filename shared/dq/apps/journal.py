@@ -92,6 +92,11 @@ class Journal(DQApp):
         return ('not written', True)
 
     async def start(self):
+        """Opens on today's entry, as SPEC.md describes it: a full-screen editor.
+
+        The week view and export are function keys from the menu that follows a
+        save, not a gate in front of writing.
+        """
         from dq import ui
         try:
             records = self.store().load()
@@ -99,9 +104,11 @@ class Journal(DQApp):
             await ui.show_error('journal', exc)
             return
 
+        await self.write(records)
+
         while True:
             pick = await ui.menu_choice('journal', [
-                ("write today's entry", 'write'),
+                ('write again', 'write'),
                 ('the week', 'week'),
                 ('export', 'export'),
                 ('import an export', 'import')])
