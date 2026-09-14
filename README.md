@@ -22,9 +22,11 @@ sha256 `5be8ad051b4c4696…0932c5` ·
 The current build, with all seven apps in it. Q only. Check it before you flash
 it — `cd releases/cc-Q && sha256sum -c SHA256SUMS`.
 
-**It has never been run on a Q.** The code is tested and it executes under the
-device's own MicroPython, but no screen has been drawn on real hardware. Flash it
-onto a device you are willing to wipe, and read the warnings below first.
+Two things to know before you flash it, both explained below: **your Q will warn
+you about it on every boot** and keep the genuine light red, because Coinkite did
+not sign it and cannot; and **it has never been run on a real Q** — the code is
+tested and runs under the device's own MicroPython, but no screen has been drawn
+on hardware yet. Use a device you are willing to wipe.
 
 ## What it looks like
 
@@ -63,10 +65,13 @@ the images any time with `python3 misc/dq-screens/render.py`.
 
 ## Read this first
 
-> - cc-Q is signed with the **public developer key (key 0)** from the upstream
->   tree. A Q running it shows this on **every** boot, for about five seconds,
->   and the *genuine* light stays **red** until official Coinkite firmware is
->   reinstalled:
+> - **Your Q will not trust this firmware, and it is right not to.** Coldcard's
+>   bootloader only trusts firmware signed by Coinkite, and nobody outside
+>   Coinkite can do that. cc-Q is signed with the *developer* key instead — a
+>   key whose private half is published in the source, so anyone can sign
+>   anything with it. The signature therefore proves nothing about who built
+>   this. Your Q says so, every boot, for about five seconds, and the *genuine*
+>   light stays **red** until official Coinkite firmware is reinstalled:
 >
 >   <img src="docs/img/screen-warning.png" width="360" alt="Upstream's boot warning: UNOFFICIAL FIRMWARE in amber, warning that the firmware is not from Coinkite and could steal your funds, with a hold-to-continue progress bar.">
 >
@@ -152,9 +157,12 @@ The plan and its milestones live in [`SPEC.md`](SPEC.md), the backlog in
 | [`cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) | **current.** All seven apps, on upstream 1.5.2Q. | `5be8ad051b4c4696…0932c5` |
 | [`2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu`](releases/cc-Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu) | Upstream 1.5.2Q rebuilt, unchanged. The toolchain proof, kept so later builds can be diffed against it. | `86868b47…7a3d61` |
 
-Both are Q only (`hw_compat 0x10`) and signed with the public developer key 0,
-so both show the unofficial-firmware warning on every boot. Neither is signed by
-Coinkite and neither ever will be.
+Both are for the Q only and both are signed with the published developer key, so
+both show the unofficial-firmware warning on every boot and keep the genuine
+light red. Neither is signed by Coinkite and neither ever can be — Coinkite's
+signing keys are theirs alone. `devkey0` in the filenames is that developer key:
+key number 0 in the bootloader's list, the one whose private half ships in the
+source at `stm32/keys/00.pem`.
 
 `SHA256SUMS` in `releases/cc-Q/` covers both. It is not PGP-signed: it ties the
 bytes to this repository and claims nothing more. Upstream's
