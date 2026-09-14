@@ -13,7 +13,7 @@ under ten files.
 | `releases/.gitignore` | Added `!cc-Q/*.dfu` beside the existing `*.dfu`. | Lets cc-Q binaries live in `releases/cc-Q/` while upstream's ignore of stray `.dfu` files elsewhere stays exactly as it was. |
 | `.gitmodules` | `ignore = dirty` on every submodule entry. | Building the firmware dirties the submodules every time: `make setup` creates symlinks inside MicroPython and moves nested submodule pointers, and libngu patches its own bech32 sources. None of it is ours and none of it is committable, but it makes `git status` permanently noisy and buries real changes. `dirty` hides working-tree noise only — a moved submodule **commit** still shows, which is the thing we must never miss. |
 | `shared/manifest_q1.py` | One `freeze_as_mpy` block listing the `dq/` modules. | Nothing of ours ships to the device otherwise. Additive: upstream's own blocks are untouched. |
-| `shared/flow.py` | One `start_dq()` helper and one `MenuItem('cc-Q', shortcut='q')` on each of `VirginSystem`, `EmptyWallet` and `NormalSystem`. | The single entry point. It is on all three menus because cc-Q works with no seed, so it must be reachable on a device that has never had one. |
+| `shared/flow.py` | cc-Q is the top-level menu after login. Upstream's two post-login lists are **renamed, not changed**: `NormalSystem` → `ColdcardSystem`, `EmptyWallet` → `ColdcardEmptyWallet`, every item still in them. New `NormalSystem`/`EmptyWallet` are built by `dq_top_menu()` from the app registry, ending in a `Coldcard` row that opens the renamed list. Plus the app launcher and the first-run gate. | Invariant 3: the Bitcoin menus are hidden, not deleted — they are one keypress away under `Coldcard`, or `z`. `actions.make_top_menu()` needs no patch at all, because it imports those two names and does not care how they were built. cc-Q is deliberately **not** on `VirginSystem`: before a PIN exists the settings blob has little protecting it, and that is where the device key lives. |
 
 Four files, against a budget of ten. `stm32/`, `unix/` and upstream's own tests
 are untouched.
@@ -45,6 +45,21 @@ Bitcoin menu tree is the first case: when M1 lands, `shared/flow.py` gets a patc
 menu, and `shared/` keeps every PSBT and multisig module it has today. They cost
 flash, not maintenance, and deleting them would make every future upstream merge a
 fight.
+
+**The emulated keyboard can only type 42 characters.** `usb.py`'s `char_map` is
+roughly the Base64 set — letters, digits, space, `* + - /` — and an unmappable
+character is not dropped or refused, it is typed as **`x`** (`usb.py:1206`). A
+password with `@` in it would go out silently wrong and read as a bad password on
+the far machine. `dq/hid.py` therefore asks that table rather than keeping its
+own list of what is typable, and refuses the whole string if anything in it is
+not. The first version of this file did keep its own list, which was wrong, and
+would have caused exactly the silent corruption it was written to prevent.
+
+**Deleting a vault entry leaves a tombstone.** `{'id': 14, 'deleted': True}`, and
+nothing else — no secret, no service, no login. Ids must never be reused: a
+recycled number points a paper card at the wrong account and regenerates a
+different derived password. A high-water mark in settings would not survive a
+card moving to another device; a tombstone travels with the file.
 
 **Typing is a service, not an app.** The obvious design was a keypad app that
 types vault passwords, and it is wrong: invariant 4 says no app knows another. So

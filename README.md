@@ -15,7 +15,7 @@ only**. Not affiliated with, endorsed by, or supported by Coinkite.
 <a href="https://github.com/Ak1ra00/cc-Q/raw/main/releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu"><img src="docs/img/download-dfu.png" width="300" alt="Download cc-Q 0.1 for the Coldcard Q"></a>
 
 **[Download `cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](https://github.com/Ak1ra00/cc-Q/raw/main/releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu)** ·
-sha256 `ca655e8b0535d674…ff82c0` ·
+sha256 `fa832b0ec5548762…edaa54` ·
 [browse it](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) ·
 [older builds](releases/cc-Q)
 
@@ -104,7 +104,9 @@ from one home screen:
   confirmed, so you can later prove the bytes are unchanged.
 - **keypad** `k` — snippets you retype constantly, typed into the machine in
   front of you over USB. It cannot reach the vault's passwords; typing is a
-  service any app can use, and the vault uses it too.
+  service any app can use, and the vault uses it too. Note the Q's emulated
+  keyboard only knows 42 characters — letters, digits, space and `* + - /` — so
+  anything with `@` or `!` in it is refused rather than typed wrong.
 
 Behind them: a green-phosphor CRT theme applied globally, a plugin registry so the
 home screen never hardcodes an app list, and an app-scoped record store on microSD
@@ -130,8 +132,10 @@ on first run rather than burying it here:
 
 ## Where this is up to
 
-All seven apps are written. **None of their screens has been drawn on a real Q
-yet** — so treat this as a working draft, not a finished product.
+All seven apps are written, and cc-Q is what you land on after entering your PIN
+— the Coldcard's own menu is the last row, with everything still in it. **None of
+these screens has been drawn on a real Q yet**, so treat this as a working draft,
+not a finished product.
 
 What that means concretely:
 
@@ -140,7 +144,7 @@ What that means concretely:
 | **Tested** | 117 tests: the encrypted store, key derivation, sign-in codes against the RFC vectors, share splitting, and every app's record logic. |
 | **Run for real** | The modules execute under the device's own MicroPython with its real AES, HMAC, secp256k1 and TRNG — not stand-ins. That caught two bugs CPython could not see. |
 | **Not yet done** | Nobody has pressed a key on a Q running this. The screens are unproven. |
-| **Next** | cc-Q becomes the screen you land on, with the Bitcoin menus tucked away behind it. Right now it is one item on the normal Coldcard menu. |
+| **Next** | Running it. The simulator builds; nothing has been driven through it yet. |
 
 The Q has no clock — no RTC, no backup cell, no 32.768 kHz crystal — so the date
 is unknown at every boot. That is why the journal asks you what day it is and why
@@ -154,7 +158,7 @@ The plan and its milestones live in [`SPEC.md`](SPEC.md), the backlog in
 
 | file | what is in it | sha256 |
 |---|---|---|
-| [`cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) | **current.** All seven apps, on upstream 1.5.2Q. | `ca655e8b0535d674…ff82c0` |
+| [`cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) | **current.** All seven apps, on upstream 1.5.2Q. | `fa832b0ec5548762…edaa54` |
 | [`2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu`](releases/cc-Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu) | Upstream 1.5.2Q rebuilt, unchanged. The toolchain proof, kept so later builds can be diffed against it. | `86868b47…7a3d61` |
 
 Both are for the Q only and both are signed with the published developer key, so
