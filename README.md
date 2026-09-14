@@ -15,7 +15,7 @@ only**. Not affiliated with, endorsed by, or supported by Coinkite.
 <a href="https://github.com/Ak1ra00/cc-Q/raw/main/releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu"><img src="docs/img/download-dfu.png" width="300" alt="Download cc-Q 0.1 for the Coldcard Q"></a>
 
 **[Download `cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](https://github.com/Ak1ra00/cc-Q/raw/main/releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu)** ·
-sha256 `71b3d6ec3bbf5663…0d6dc5` ·
+sha256 `eb4a2ad2939ab50e…0657dc` ·
 [browse it](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) ·
 [older builds](releases/cc-Q)
 
@@ -85,8 +85,10 @@ the images any time with `python3 misc/dq-screens/render.py`.
 
 ## What it is
 
-Nine apps, all reachable from the screen you land on after your PIN, and the
-ones that store anything are encrypted under keys that never leave the device:
+Nine apps. After your PIN you land on a list of them, each row carrying its own
+status — whether today's journal entry is written, whether the clock is set — and
+the Coldcard's own menu is the last row. The ones that store anything are
+encrypted under keys that never leave the device:
 
 - **vault** `v` — passwords, searchable by service and login. Each entry has a
   number that never changes and never gets reused. That number is what you write
@@ -164,7 +166,7 @@ The plan and its milestones live in [`SPEC.md`](SPEC.md), the backlog in
 
 | file | what is in it | sha256 |
 |---|---|---|
-| [`cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) | **current.** All seven apps, on upstream 1.5.2Q. | `71b3d6ec3bbf5663…0d6dc5` |
+| [`cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) | **current.** All seven apps, on upstream 1.5.2Q. | `eb4a2ad2939ab50e…0657dc` |
 | [`2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu`](releases/cc-Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu) | Upstream 1.5.2Q rebuilt, unchanged. The toolchain proof, kept so later builds can be diffed against it. | `86868b47…7a3d61` |
 
 Both are for the Q only and both are signed with the published developer key, so

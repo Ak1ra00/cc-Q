@@ -101,6 +101,19 @@ that first, so the result provably predates the reveal. The tag and the die size
 are inside the hash on purpose: without them a d6 result could be passed off as a
 d20 roll.
 
+**The landing screen is a MenuSystem, not a screen of our own.** It gets
+upstream's scrolling, shortcut keys and back handling for free, and the rows
+carry each app's own status because `MenuItem.label` is read at draw time -- a
+property on a subclass makes it live without rebuilding anything. Storage is read
+once and cached, invalidated when an app exits, since that is the only moment a
+status can have changed; polling it on every redraw would spin the card for
+nothing. The separate "status" screen is gone: it listed the same apps one
+keypress from the menu that listed them.
+
+**Idle logout was already handled upstream.** `ux.idle_logout()` is a global task
+watching `numpad.last_event_time`, so it fires whatever screen is running,
+cc-Q's included. No cc-Q code needed, and none was written.
+
 **Time is not available.** See the M0 finding in `SPEC.md`. No code may assume a
 wall clock exists; anything that needs one asks the owner.
 
