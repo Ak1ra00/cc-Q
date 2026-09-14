@@ -50,6 +50,27 @@ def _fake_utime():
     return m
 
 
+def _fake_bip39():
+    """bip39 is a native module, so CPython needs a stand-in.
+
+    Real BIP-39 words only -- a made-up word here would let a test pass that the
+    device would reject. The full list's shape (555 five-letter words) is checked
+    on the device instead, by testing/dq/microcheck.py.
+    """
+    m = types.ModuleType('bip39')
+    m.wordlist_en = (
+        # not five letters, so dictionary() must drop them
+        'abandon', 'acid', 'add', 'able', 'absorb', 'account',
+        # five letters
+        'about', 'above', 'abuse', 'actor', 'adapt', 'again', 'agree', 'ahead',
+        'alarm', 'album', 'alert', 'alien', 'alley', 'allow', 'alone', 'alpha',
+        'alter', 'anger', 'angle', 'angry', 'ankle', 'apart', 'apple', 'april',
+        'arena', 'argue', 'armed', 'armor', 'arrow', 'asset', 'audit', 'avoid',
+        'awake', 'aware', 'badge', 'crane', 'sleep', 'eagle', 'equip', 'ready',
+    )
+    return m
+
+
 def _fake_usb():
     """Stand in for usb.EmulatedKeyboard, carrying the REAL character table.
 
@@ -118,6 +139,7 @@ def micropython(monkeypatch):
     uh.sha512 = hashlib.sha512
     sys.modules['uhashlib'] = uh
     sys.modules['usb'] = _fake_usb()
+    sys.modules['bip39'] = _fake_bip39()
 
     glob = types.ModuleType('glob')
     glob.settings = FakeSettings()
@@ -126,7 +148,7 @@ def micropython(monkeypatch):
 
     yield glob
 
-    for name in ('ngu', 'ujson', 'ustruct', 'ubinascii', 'utime', 'uhashlib', 'usb', 'glob'):
+    for name in ('ngu', 'ujson', 'ustruct', 'ubinascii', 'utime', 'uhashlib', 'usb', 'bip39', 'glob'):
         sys.modules.pop(name, None)
 
 
