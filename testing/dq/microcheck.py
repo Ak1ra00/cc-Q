@@ -161,6 +161,20 @@ def t_dice():
                            else [rolls[0] % 6 + 1] + rolls[1:], nonce, code)
 check('dice: commitment binds the roll (real TRNG/SHA)', t_dice)
 
+def t_window():
+    from dq.theme import window
+    idx, top = 0, 0
+    for target in range(42):
+        idx, top = window(target, top, 42, 5)
+        assert top <= idx < top + 5, (idx, top)
+    assert window(41, 0, 42, 5)[1] == 37
+check('list window keeps the selection visible', t_window)
+
+# dq.ui and dq.apps.home import charcodes and menu, which probe the hardware
+# through ckcc; they only import inside the booted firmware. Named here so it is
+# obvious they are NOT covered by this script rather than quietly absent.
+print('  skip  landing rows / screens: need the booted firmware, not this shim')
+
 def t_registry():
     import dq.apps.vault, dq.apps.codes, dq.apps.journal
     import dq.apps.recovery, dq.apps.sign, dq.apps.witness, dq.apps.keypad

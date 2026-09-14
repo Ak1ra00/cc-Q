@@ -95,6 +95,22 @@ def footer(dis, keys, right=None):
     dis.text(0, -1, _padded(pad(keys, right or ''), CHARS_W), invert=True)
 
 
+def window(idx, top, count, rows):
+    """Which slice of a list to draw, and where the selection sits in it.
+
+    Pulled out of the drawing loop because it is the part that can be wrong: the
+    first version drew the first five rows and let the selection run past them,
+    so with 42 entries the highlight vanished and Enter opened an invisible row.
+    """
+    idx = max(0, min(idx, count - 1))
+    if idx < top:
+        top = idx
+    elif idx >= top + rows:
+        top = idx - rows + 1
+    top = max(0, min(top, max(0, count - rows)))
+    return idx, top
+
+
 def body(dis, row, msg, x=0, dark=False):
     "draw inside the content area; row 0 is the first line under the header"
     if 0 <= row < BODY_ROWS:
