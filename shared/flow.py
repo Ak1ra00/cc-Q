@@ -432,17 +432,62 @@ AdvancedNormalMenu = [
 
 # needs to create main wallet PIN
 
-# cc-Q: the personal terminal. Works with no seed, so it appears on every menu.
-async def start_dq(*a):
-    from dq.apps import home
-    # importing each module registers it; the home screen reads the registry
+# cc-Q: the personal terminal. It is the top level after login; the Coldcard's
+# own menu is the last item on it, with every feature still there. Nothing of
+# upstream's is deleted -- see PATCHES.md.
+
+def _dq_apps():
+    # importing each module registers it; the menu is built from the registry,
+    # so adding an app never means editing this file
     import dq.apps.vault, dq.apps.codes, dq.apps.journal
     import dq.apps.recovery, dq.apps.sign, dq.apps.witness, dq.apps.keypad
+    from dq.apps import APPS
+    return APPS
+
+
+async def start_dq(*a):
+    from dq.apps import home
+    _dq_apps()
     await home.run()
+
+
+async def _run_dq_app(menu, label, item):
+    from dq import theme, ui
+    from dq.keys import is_first_run, device_key
+
+    theme.apply()
+
+    # Storage mints the device key the first time it is read. Explain what that
+    # means before it happens, not after.
+    if is_first_run():
+        if not await ui.first_run_notice():
+            return
+        device_key()
+
+    for app in _dq_apps():
+        if app.hotkey == item.arg:
+            try:
+                await app.start()
+            except Exception as exc:
+                await ui.show_error(app.title, exc)
+            return
+
+
+def dq_top_menu(coldcard_menu):
+    "cc-Q's apps, and a way down into the Coldcard underneath"
+    from dq import theme
+    theme.apply()
+    items = [MenuItem(a.title, f=_run_dq_app, arg=a.hotkey, shortcut=a.hotkey)
+             for a in _dq_apps()]
+    items.append(MenuItem('status', f=start_dq, shortcut='0'))
+    items.append(MenuItem('Coldcard', menu=coldcard_menu, shortcut='z'))
+    return items
 
 VirginSystem = [
     #         xxxxxxxxxxxxxxxx
-    MenuItem('cc-Q', f=start_dq, shortcut='q'),
+    # No cc-Q here on purpose: the device key lives in the settings blob, whose
+    # protection comes from the PIN and the secure element. Offering the apps
+    # before a PIN exists would mint that key with nothing much guarding it.
     MenuItem('Choose PIN Code', f=initial_pin_setup),
     MenuItem('Advanced/Tools', menu=AdvancedVirginMenu, shortcut='t'),
     MenuItem('Bag Number', f=show_bag_number),
@@ -474,9 +519,10 @@ NewSeedMenu = [
 ]
 
 # has PIN, but no secret seed yet
-EmptyWallet = [
+# - renamed from EmptyWallet: cc-Q is the top level now and this sits under it,
+#   reachable from the "Coldcard" item, with every entry still here
+ColdcardEmptyWallet = [
     #         xxxxxxxxxxxxxxxx
-    MenuItem('cc-Q', f=start_dq, shortcut='q'),
     MenuItem('New Seed Words', menu=NewSeedMenu),
     MenuItem('Import Existing', menu=ImportWallet),
     MenuItem("Migrate Coldcard", menu=clone_start),
@@ -489,9 +535,10 @@ EmptyWallet = [
 
 # In operation, normal system, after a good PIN received.
 # - key shortcuts in place for all items that will be shown on Q
-NormalSystem = [
+# - renamed from NormalSystem: cc-Q is the top level now and this sits under it,
+#   reachable from the "Coldcard" item, with every entry still here
+ColdcardSystem = [
     #         xxxxxxxxxxxxxxxx
-    MenuItem('cc-Q', f=start_dq, shortcut='q'),
     MenuItem('Ready To Sign', f=ready2sign, shortcut='r'),
     MenuItem('Passphrase', menu=start_b39_pw, predicate=word_based_seed, shortcut='p'),
     MenuItem('Scan Any QR Code', predicate=version.has_qr,
@@ -588,3 +635,11 @@ HobbledTopMenu = [
     MenuItem('EXIT TEST DRIVE', f=sssp_feature_menu, predicate=is_hobble_testdrive),
     ShortcutItem(KEY_NFC, predicate=nfc_enabled, menu=HobbledNFCToolsMenu),
 ]
+
+
+# What actions.make_top_menu() imports. cc-Q is what you land on after the PIN;
+# the Coldcard's own menu is the last item on it and is otherwise untouched.
+NormalSystem = dq_top_menu(ColdcardSystem)
+EmptyWallet = dq_top_menu(ColdcardEmptyWallet)
+
+# EOF
