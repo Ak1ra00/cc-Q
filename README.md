@@ -15,7 +15,7 @@ only**. Not affiliated with, endorsed by, or supported by Coinkite.
 <a href="https://github.com/Ak1ra00/cc-Q/raw/main/releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu"><img src="docs/img/download-dfu.png" width="300" alt="Download cc-Q 0.1 for the Coldcard Q"></a>
 
 **[Download `cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](https://github.com/Ak1ra00/cc-Q/raw/main/releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu)** ·
-sha256 `fa832b0ec5548762…edaa54` ·
+sha256 `71b3d6ec3bbf5663…0d6dc5` ·
 [browse it](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) ·
 [older builds](releases/cc-Q)
 
@@ -85,8 +85,8 @@ the images any time with `python3 misc/dq-screens/render.py`.
 
 ## What it is
 
-Seven apps, all encrypted under keys that never leave the device, all reachable
-from one home screen:
+Nine apps, all reachable from the screen you land on after your PIN, and the
+ones that store anything are encrypted under keys that never leave the device:
 
 - **vault** `v` — passwords, searchable by service and login. Each entry has a
   number that never changes and never gets reused. That number is what you write
@@ -102,6 +102,12 @@ from one home screen:
   verifier needs only the message and the signature.
 - **witness** `w` — hash a file off the card and log the digest with the date you
   confirmed, so you can later prove the bytes are unchanged.
+- **words** `g` — guess the five-letter word in six tries, played on the BIP-39
+  wordlist that is already in the firmware. 555 words, no extra flash, and the
+  ones you learn to recognise are the ones on your paper backup.
+- **dice** `d` — rolls from the hardware TRNG, with a commitment: the Q shows a
+  hash of the result *before* revealing it, so afterwards anyone can check the
+  number was fixed in advance. Settle a bet without anyone being trusted.
 - **keypad** `k` — snippets you retype constantly, typed into the machine in
   front of you over USB. It cannot reach the vault's passwords; typing is a
   service any app can use, and the vault uses it too. Note the Q's emulated
@@ -141,7 +147,7 @@ What that means concretely:
 
 | | |
 |---|---|
-| **Tested** | 117 tests: the encrypted store, key derivation, sign-in codes against the RFC vectors, share splitting, and every app's record logic. |
+| **Tested** | 160 tests: the encrypted store, key derivation, sign-in codes against the RFC vectors, share splitting, word scoring, dice commitments, and every app's record logic. |
 | **Run for real** | The modules execute under the device's own MicroPython with its real AES, HMAC, secp256k1 and TRNG — not stand-ins. That caught two bugs CPython could not see. |
 | **Not yet done** | Nobody has pressed a key on a Q running this. The screens are unproven. |
 | **Next** | Running it. The simulator builds; nothing has been driven through it yet. |
@@ -158,7 +164,7 @@ The plan and its milestones live in [`SPEC.md`](SPEC.md), the backlog in
 
 | file | what is in it | sha256 |
 |---|---|---|
-| [`cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) | **current.** All seven apps, on upstream 1.5.2Q. | `fa832b0ec5548762…edaa54` |
+| [`cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) | **current.** All seven apps, on upstream 1.5.2Q. | `71b3d6ec3bbf5663…0d6dc5` |
 | [`2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu`](releases/cc-Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu) | Upstream 1.5.2Q rebuilt, unchanged. The toolchain proof, kept so later builds can be diffed against it. | `86868b47…7a3d61` |
 
 Both are for the Q only and both are signed with the published developer key, so
@@ -266,6 +272,7 @@ shared/dq/
     apps/home.py        home screen — reads the registry, knows no app
     apps/vault.py  apps/journal.py  apps/codes.py
     apps/recovery.py  apps/sign.py  apps/witness.py  apps/keypad.py
+    apps/words.py  apps/dice.py
 ```
 
 Adding an app is four steps: write the class, decorate it with `@register_app`, add

@@ -88,6 +88,19 @@ theme.py and otp.py -- neither exists in MicroPython, and the `rjust` was inside
 `hotp()`, so every sign-in code would have crashed on hardware. 117 CPython tests
 had not noticed. Run both.
 
+**The word game reuses the BIP-39 list rather than shipping a dictionary.**
+2048 words are already in flash for seed handling, 555 of them five letters
+long. A dictionary of its own would have cost 15-20 KB for no gain, and this way
+the game quietly drills the words that appear on a paper backup. `bip39` is a
+native module, so CPython tests use a small stand-in of real words and the
+device check (`microcheck.py`) asserts the real 555.
+
+**Dice are worth having because of the commitment, not the randomness.** Any
+device can produce a number. This one hashes `(tag, nonce, die, rolls)` and shows
+that first, so the result provably predates the reveal. The tag and the die size
+are inside the hash on purpose: without them a d6 result could be passed off as a
+d20 roll.
+
 **Time is not available.** See the M0 finding in `SPEC.md`. No code may assume a
 wall clock exists; anything that needs one asks the owner.
 
