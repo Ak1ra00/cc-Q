@@ -12,6 +12,19 @@ application.
 Built on [Coldcard/firmware](https://github.com/Coldcard/firmware), **Q1 target
 only**. Not affiliated with, endorsed by, or supported by Coinkite.
 
+<a href="https://github.com/Ak1ra00/cc-Q/releases/download/2026-09-03T1540-v1.5.2Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu"><img src="docs/img/download-dfu.png" width="300" alt="Download the cc-Q .dfu — 1.5.2Q baseline, Q1 only"></a>
+
+**[Download the `.dfu`](https://github.com/Ak1ra00/cc-Q/releases/download/2026-09-03T1540-v1.5.2Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu)** ·
+sha256 `86868b47…a3d61` ·
+[verify it first](#firmware) ·
+[in-tree copy](releases/cc-Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu) ·
+[release page](https://github.com/Ak1ra00/cc-Q/releases/tag/2026-09-03T1540-v1.5.2Q)
+
+That file is the **M0 baseline** — upstream 1.5.2Q rebuilt from this tree and
+signed with dev key 0. **None of the screens below are in it yet**; it behaves as
+a normal Coldcard that warns about unofficial firmware on every boot. Read
+[Read this first](#read-this-first) before flashing it anywhere.
+
 ## What it looks like
 
 <table>
@@ -47,8 +60,8 @@ line lengths you get. **They are the plan, not the current build:** the firmware
 published below is the M0 baseline and contains none of this yet. Regenerate them
 any time with `python3 misc/dq-screens/render.py`.
 
-> ### Read this first
->
+## Read this first
+
 > - cc-Q is signed with the **public developer key (key 0)** from the upstream
 >   tree. A Q running it shows this on **every** boot, for about five seconds,
 >   and the *genuine* light stays **red** until official Coinkite firmware is

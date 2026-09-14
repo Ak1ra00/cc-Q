@@ -35,18 +35,19 @@ SEL_A    = 0.18     # selected row
 
 
 class Panel:
-    def __init__(self):
-        self.px = [[BG] * WIDTH for _ in range(HEIGHT)]
+    def __init__(self, w=WIDTH, h=HEIGHT):
+        self.w, self.h = w, h
+        self.px = [[BG] * w for _ in range(h)]
 
     def rect(self, x, y, w, h, col, alpha=1.0):
-        for yy in range(max(0, y), min(HEIGHT, y + h)):
+        for yy in range(max(0, y), min(self.h, y + h)):
             row = self.px[yy]
-            for xx in range(max(0, x), min(WIDTH, x + w)):
+            for xx in range(max(0, x), min(self.w, x + w)):
                 row[xx] = blend(row[xx], col, alpha)
 
     def bar(self, r, alpha=BAR_A, col=PHOSPHOR):
         "full-width tinted row (header / footer)"
-        self.rect(0, TOP_MARGIN + r * CELL_H, WIDTH, CELL_H, col, alpha)
+        self.rect(0, TOP_MARGIN + r * CELL_H, self.w, CELL_H, col, alpha)
 
     def sel(self, r, alpha=SEL_A, col=PHOSPHOR):
         "selected row highlight, content width only"
@@ -71,6 +72,17 @@ class Panel:
         w = sum(len(GLYPHS[ch]) * 2 // CELL_H // CELL_W for ch in s)
         return self.text(r, CHARS_W - w, s, col)
 
+    def text_px(self, x, y, s, col=DIM):
+        "draw at an exact pixel position, off the cell grid"
+        for ch in s:
+            bits = GLYPHS.get(ch)
+            if bits is None:
+                raise SystemExit("glyph not on device: %r" % ch)
+            w = len(bits) * 2 // CELL_H
+            self.blit(x, y, w, bits, col)
+            x += w
+        return x
+
     def blit(self, x0, y0, w, bits, col):
         for i in range(w * CELL_H):
             b = bits[i >> 1]
@@ -78,7 +90,7 @@ class Panel:
             if not v:
                 continue
             x, y = x0 + (i % w), y0 + (i // w)
-            if 0 <= x < WIDTH and 0 <= y < HEIGHT:
+            if 0 <= x < self.w and 0 <= y < self.h:
                 self.px[y][x] = blend(self.px[y][x], col, v / 15.0)
 
     def png(self, path, scale=2):
@@ -88,7 +100,7 @@ class Panel:
                 raw.append(0)
                 for p in row:
                     raw.extend(bytes(p) * scale)
-        w, h = WIDTH * scale, HEIGHT * scale
+        w, h = self.w * scale, self.h * scale
 
         def chunk(tag, data):
             c = struct.pack('>I', len(data)) + tag + data
@@ -270,21 +282,34 @@ def qr(p, x0, y0, s):
                 p.rect(x0 + i * s, y0 + j * s, s, s, PHOSPHOR)
 
 
+def s_download():
+    "download button for the README, drawn in the same font as the screens"
+    W, H = 300, 66
+    p = Panel(W, H)
+    p.rect(0, 0, W, H, PHOSPHOR, 0.10)
+    for x, y, w, h in ((0, 0, W, 1), (0, H - 1, W, 1), (0, 0, 1, H), (W - 1, 0, 1, H)):
+        p.rect(x, y, w, h, PHOSPHOR, 0.55)
+    p.text_px(16, 8, '\u25b6 DOWNLOAD .DFU', PHOSPHOR)
+    p.text_px(16, 32, '1.5.2Q  baseline  \u2022  Q1', FAINT)
+    return p
+
+
 SCREENS = [
-    ('warning',     s_warning),
-    ('boot-home',   s_home),
-    ('vault-find',  s_vault_find),
-    ('vault-entry', s_vault_detail),
-    ('journal',     s_journal),
-    ('journal-week', s_week),
-    ('codes',       s_codes),
-    ('codes-noclock', s_codes_stale),
-    ('first-run',   s_first_run),
+    ('download-dfu',  s_download),
+    ('screen-warning',     s_warning),
+    ('screen-boot-home',   s_home),
+    ('screen-vault-find',  s_vault_find),
+    ('screen-vault-entry', s_vault_detail),
+    ('screen-journal',     s_journal),
+    ('screen-journal-week', s_week),
+    ('screen-codes',       s_codes),
+    ('screen-codes-noclock', s_codes_stale),
+    ('screen-first-run',   s_first_run),
 ]
 
 if __name__ == '__main__':
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(TOP, 'docs', 'img')
     os.makedirs(out, exist_ok=True)
     for name, fn in SCREENS:
-        path = fn().png(os.path.join(out, 'screen-%s.png' % name))
+        path = fn().png(os.path.join(out, '%s.png' % name))
         print('%-34s %6d bytes' % (os.path.relpath(path, TOP), os.path.getsize(path)))
