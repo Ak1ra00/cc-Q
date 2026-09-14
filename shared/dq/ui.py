@@ -147,56 +147,104 @@ async def ask_date(guess, why):
             await ux_show_story('Want YYYY-MM-DD, like 2026-09-14.', title='date')
 
 
-async def show_codes(app, records):
-    "the codes screen, including the greyed state when time is unknown"
+async def scan_text(prompt='Scan a QR'):
+    "read a QR; apps use this rather than touching the scanner themselves"
+    from ux_q1 import QRScannerInteraction
+    return await QRScannerInteraction().scan_text(prompt)
+
+
+async def menu_choice(title, options):
+    """A short list of actions. Returns the chosen tag, or None on back.
+
+    options is [(label, tag), ...] -- apps name their own actions rather than
+    the framework guessing them.
+    """
     from glob import dis
-    from dq import clock
-    from dq.apps.codes import rows, needs_clock, parse_time_qr
-
+    idx = 0
     while True:
-        now = clock.now()
-        stale = clock.is_stale()
-        usable = (now is not None) and not stale
-
         dis.clear()
-        theme.header(dis, 'codes', clock.describe())
-        if not records:
-            theme.body(dis, 2, 'nothing enrolled yet', x=1, dark=True)
-            theme.body(dis, 4, 'scan a QR to add one', x=1, dark=True)
-        else:
-            for n, (name, code, frac) in enumerate(rows(records, now if usable else None)):
-                theme.body(dis, n * 2, name, x=1, dark=True)
-                dis.text(-1, theme.BODY_TOP + (n * 2), code or '••• •••',
-                         dark=not code)
-                if code and frac:
-                    dis.text(1, theme.BODY_TOP + (n * 2) + 1,
-                             '█' * int(frac * 28), dark=True)
-            if not usable and needs_clock(records):
-                theme.body(dis, 6, 'Time is unknown after power off.', x=1)
-                theme.body(dis, 7, 'Scan a time QR to fix.', x=1)
-        theme.footer(dis, 'r resync', '+ enroll   X back')
+        theme.header(dis, title)
+        for n, (label, _) in enumerate(options[:6]):
+            dis.text(1, theme.BODY_TOP + 1 + n, theme.fit(label, theme.CHARS_W - 2),
+                     invert=(n == idx))
+        theme.footer(dis, 'OK choose', 'X back')
         dis.show()
 
         ch = await _key()
         if ch in BACK_KEYS:
-            return
-        if ch in ('r', KEY_QR, '+'):
-            got = await _scan()
-            if not got:
-                continue
+            return None
+        if ch == KEY_ENTER:
+            return options[idx][1]
+        if ch == KEY_UP:
+            idx = (idx - 1) % len(options)
+        elif ch == KEY_DOWN:
+            idx = (idx + 1) % len(options)
+
+
+async def collect_lines(title, prompt, done_when=None, limit=None):
+    """Gather one or more lines (recovery shares, mostly), by QR or typing.
+
+    done_when(lines) is tried after each line; when it stops raising we have
+    everything, so the owner is never asked to count their own shares.
+    """
+    from ux_q1 import ux_input_text
+    from ux import ux_show_story
+    got = []
+    while True:
+        label = prompt % (len(got) + 1) if '%' in prompt else prompt
+        line = await ux_input_text('', prompt=label, max_len=120, scan_ok=True)
+        if line is None:
+            return got if got and limit else None
+        line = line.strip()
+        if not line:
+            continue
+        got.append(line)
+
+        if limit and len(got) >= limit:
+            return got
+        if done_when:
             try:
-                if ch == '+' or got.startswith('otpauth://'):
-                    app.enroll(records, got)
-                else:
-                    clock.set_time(parse_time_qr(got))
-                app.store().save(records)
+                done_when(got)
+                return got
             except Exception as exc:
-                await show_error('codes', exc)
+                await ux_show_story('%s\n\nAdd another, or press X to stop.' % exc,
+                                    title=title)
 
 
-async def _scan():
-    from ux_q1 import QRScannerInteraction
-    return await QRScannerInteraction().scan_text('Scan a QR')
+async def import_text(title):
+    "text in, by QR or keyboard"
+    from ux_q1 import ux_input_text
+    return await ux_input_text('', prompt=title, max_len=2000, scan_ok=True)
+
+
+async def offer_export(title, blob, filename=None, qr_ok=False):
+    "show it, then let the owner put it on a card or a QR"
+    from ux import ux_show_story
+    from glob import dis
+    ch = await ux_show_story('%s\n\nPress 1 to write it to a card%s.'
+                             % (blob, ', 2 for a QR' if qr_ok else ''),
+                             title=title, escape='12')
+    if ch == '1' and filename:
+        from files import CardSlot
+        with CardSlot() as card:
+            path = card.get_sd_root() + '/' + filename
+            with open(path, 'wt') as fd:
+                fd.write(blob)
+        await ux_show_story('Wrote %s' % filename, title=title)
+    elif ch == '2' and qr_ok:
+        from ux import show_qr_code
+        await show_qr_code(blob, is_alnum=False)
+
+
+async def pick_file(title, suffix=None, max_size=16 * 1024 * 1024):
+    "choose a file off the card; returns a full path or None"
+    from actions import file_picker
+    got = await file_picker(suffix=suffix, max_size=max_size,
+                            none_msg='No files on the card to %s.' % title)
+    if not got:
+        return None
+    # file_picker hands back a path, or (path, size) depending on the caller
+    return got[0] if isinstance(got, (tuple, list)) else got
 
 
 def _wrap(txt, width):

@@ -59,16 +59,16 @@ async def ask_today():
 
 
 def _date_check(date):
-    from dq.apps.journal import _ordinal
-    _ordinal(date)                      # raises on anything malformed
+    from dq.dates import ordinal
+    ordinal(date)                       # raises on anything malformed
     if len(date) != 10 or date[4] != '-' or date[7] != '-':
         raise ValueError('want YYYY-MM-DD')
     return date
 
 
 def _date_from_unix(secs):
-    from dq.apps.journal import _from_ordinal
-    return _from_ordinal(int(secs) // 86400)
+    from dq.dates import from_ordinal
+    return from_ordinal(int(secs) // 86400)
 
 
 def _build_date():

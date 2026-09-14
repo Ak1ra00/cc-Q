@@ -86,6 +86,10 @@ def micropython(monkeypatch):
     sys.modules['ustruct'] = __import__('struct')
     sys.modules['ubinascii'] = __import__('binascii')
     sys.modules['utime'] = _fake_utime()
+    uh = types.ModuleType('uhashlib')
+    uh.sha256 = hashlib.sha256
+    uh.sha512 = hashlib.sha512
+    sys.modules['uhashlib'] = uh
 
     glob = types.ModuleType('glob')
     glob.settings = FakeSettings()
@@ -94,7 +98,7 @@ def micropython(monkeypatch):
 
     yield glob
 
-    for name in ('ngu', 'ujson', 'ustruct', 'ubinascii', 'utime', 'glob'):
+    for name in ('ngu', 'ujson', 'ustruct', 'ubinascii', 'utime', 'uhashlib', 'glob'):
         sys.modules.pop(name, None)
 
 

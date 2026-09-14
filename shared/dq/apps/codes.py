@@ -92,16 +92,62 @@ class Codes(DQApp):
         return ('%d enrolled' % len(records), False)
 
     async def start(self):
-        from dq.ui import show_codes, show_error
+        from dq.ui import show_error
         try:
             records = self.store().load()
         except Exception as exc:
             await show_error('codes', exc)
             return
-        await show_codes(self, records)
+        await _screen(self, records)
 
     def enroll(self, records, uri):
         "returns the new record; raises ValueError on anything unparseable"
         rec = otp.parse_uri(uri)
         records.append(rec)
         return rec
+
+
+async def _screen(app, records):
+    "the codes screen, including the greyed state when time is unknown"
+    from glob import dis
+    from dq import clock
+
+    while True:
+        now = clock.now()
+        stale = clock.is_stale()
+        usable = (now is not None) and not stale
+
+        dis.clear()
+        theme.header(dis, 'codes', clock.describe())
+        if not records:
+            theme.body(dis, 2, 'nothing enrolled yet', x=1, dark=True)
+            theme.body(dis, 4, 'scan a QR to add one', x=1, dark=True)
+        else:
+            for n, (name, code, frac) in enumerate(rows(records, now if usable else None)):
+                theme.body(dis, n * 2, name, x=1, dark=True)
+                dis.text(-1, theme.BODY_TOP + (n * 2), code or '••• •••',
+                         dark=not code)
+                if code and frac:
+                    dis.text(1, theme.BODY_TOP + (n * 2) + 1,
+                             '█' * int(frac * 28), dark=True)
+            if not usable and needs_clock(records):
+                theme.body(dis, 6, 'Time is unknown after power off.', x=1)
+                theme.body(dis, 7, 'Scan a time QR to fix.', x=1)
+        theme.footer(dis, 'r resync', '+ enroll   X back')
+        dis.show()
+
+        ch = await _key()
+        if ch in BACK_KEYS:
+            return
+        if ch in ('r', KEY_QR, '+'):
+            got = await ui.scan_text()
+            if not got:
+                continue
+            try:
+                if ch == '+' or got.startswith('otpauth://'):
+                    app.enroll(records, got)
+                else:
+                    clock.set_time(parse_time_qr(got))
+                app.store().save(records)
+            except Exception as exc:
+                await ui.show_error('codes', exc)

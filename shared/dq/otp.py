@@ -26,6 +26,21 @@ def b32decode(txt):
     return bytes(out)
 
 
+def b32encode(raw):
+    "RFC 4648 base32 without padding; the inverse of b32decode"
+    acc = bits = 0
+    out = ''
+    for byte in raw:
+        acc = (acc << 8) | byte
+        bits += 8
+        while bits >= 5:
+            bits -= 5
+            out += B32[(acc >> bits) & 0x1f]
+    if bits:
+        out += B32[(acc << (5 - bits)) & 0x1f]
+    return out
+
+
 def hotp(secret, counter, digits=6, algo='SHA1'):
     "RFC 4226. secret is raw bytes."
     msg = counter.to_bytes(8, 'big')
