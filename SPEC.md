@@ -44,8 +44,18 @@ tinted phosphor at 13% opacity. Footer always shows the available keys for the
 current screen. A scanline overlay at low opacity if it can be done without
 costing frame time — drop it if it can't.
 
-The 320x240 panel fits roughly 26 characters per line at 11px. Design to that,
-and truncate with an ellipsis rather than wrapping in list views.
+The 320x240 panel gives a **34 x 10 character grid**: cells are 9x22px, Iosevka,
+with a 15px top margin and 7px each side (`CHARS_W`/`CHARS_H` in
+`shared/lcd_display.py`, measured in M0 — the earlier "26 characters at 11px"
+estimate in this spec was wrong, and 34 is roomier). Header and footer bars are
+one row each, leaving **8 rows of content**. Design to that, and truncate with an
+ellipsis rather than wrapping in list views.
+
+The font carries full ASCII plus 46 symbols. Useful ones: `█ ░ ▌ ▐ ▶ ▲ ▼
+• ✓ → ← ─ ━`. There is no `⬜`-style block beyond those, and no `↵` or
+`⌘`; check `FontIosevka._data` before designing a screen around a glyph.
+`misc/dq-screens/render.py` draws any screen from that font data at true size,
+which is how the README mockups are produced.
 
 ### App registry — `shared/dq/apps/__init__.py`
 

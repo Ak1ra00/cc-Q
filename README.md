@@ -12,12 +12,52 @@ application.
 Built on [Coldcard/firmware](https://github.com/Coldcard/firmware), **Q1 target
 only**. Not affiliated with, endorsed by, or supported by Coinkite.
 
+## What it looks like
+
+<table>
+<tr>
+<td width="50%"><img src="docs/img/screen-boot-home.png" width="100%" alt="Home screen: date in phosphor green, rows for vault, codes and journal, storage status, hotkeys along the footer."></td>
+<td width="50%"><img src="docs/img/screen-vault-find.png" width="100%" alt="Vault search: a find field filtering entries by service, each row showing its permanent id, match count in the footer."></td>
+</tr>
+<tr>
+<td><sub><b>Home.</b> One row per app, each rendering its own status. <code>not written</code> in amber is the only nag in the product.</sub></td>
+<td><sub><b>Vault — find.</b> Type to filter. The number on the right is the entry's id: assigned once, never reused.</sub></td>
+</tr>
+<tr>
+<td><img src="docs/img/screen-vault-entry.png" width="100%" alt="Vault entry: password shown large in phosphor green with a QR code beside it, an amber auto-hide countdown, and the word stored in the corner."></td>
+<td><img src="docs/img/screen-codes.png" width="100%" alt="Codes screen: three sign-in codes, each with a countdown bar, and how long ago the clock was set in the header."></td>
+</tr>
+<tr>
+<td><sub><b>Vault — entry.</b> Password large enough to read across a desk, QR beside it, 20-second auto-hide in amber.</sub></td>
+<td><sub><b>Codes.</b> Three at once with countdown bars. The header always says how long ago the clock was set.</sub></td>
+</tr>
+<tr>
+<td><img src="docs/img/screen-journal.png" width="100%" alt="Journal editor: five lines of text on a dark screen with a block cursor, word count and unsaved state along the bottom."></td>
+<td><img src="docs/img/screen-codes-noclock.png" width="100%" alt="Codes screen with the clock unset: code digits replaced by dots, an amber explanation that time is unknown after power off."></td>
+</tr>
+<tr>
+<td><sub><b>Journal.</b> Five lines visible, on the Q's own keyboard. Save state is shown twice, because unsaved text on an unpluggable device deserves it.</sub></td>
+<td><sub><b>Codes, clock unknown.</b> The Q has no clock. Rather than show numbers that might be wrong, cc-Q greys them and says why.</sub></td>
+</tr>
+</table>
+
+These are rendered from the Q's own font data at the panel's real geometry —
+320×240, a 34×10 character grid of 9×22px cells — so the line lengths are the
+line lengths you get. **They are the plan, not the current build:** the firmware
+published below is the M0 baseline and contains none of this yet. Regenerate them
+any time with `python3 misc/dq-screens/render.py`.
+
 > ### Read this first
 >
 > - cc-Q is signed with the **public developer key (key 0)** from the upstream
->   tree. A Q running it shows the unofficial-firmware warning and a long delay on
->   **every** boot, and the *genuine* light stays **red** until official Coinkite
->   firmware is reinstalled. That is the expected state, not a fault.
+>   tree. A Q running it shows this on **every** boot, for about five seconds,
+>   and the *genuine* light stays **red** until official Coinkite firmware is
+>   reinstalled:
+>
+>   <img src="docs/img/screen-warning.png" width="360" alt="Upstream's boot warning: UNOFFICIAL FIRMWARE in amber, warning that the firmware is not from Coinkite and could steal your funds, with a hold-to-continue progress bar.">
+>
+>   That screen comes from code cc-Q never touches. It cannot be themed or
+>   skipped. It is the honest price of unofficial firmware.
 > - **Keep an official Coinkite `.dfu` for your Q on a spare microSD**, from
 >   [coldcard.com/downloads](https://coldcard.com/downloads). That card is the way
 >   back. Set it aside before you flash anything from here.
@@ -53,8 +93,10 @@ Journal, codes, and the store itself never use it.
 
 **The consequence, stated plainly: if the device is wiped, seedless data is gone
 unless you exported it.** Derived vault entries survive a wipe as long as the seed
-and the index list survive. Stored entries, journal, and codes do not. This is the
-trade for not requiring a seed, and it is also why the vault has an export.
+and the index list survive. Stored entries, journal, and codes do not. cc-Q says so
+on first run rather than burying it here:
+
+<img src="docs/img/screen-first-run.png" width="360" alt="First run screen: explains a device key was made from the hardware TRNG and lives behind your PIN, then warns in amber that a wipe takes the vault, journal and codes with it unless exported.">
 
 ## Status
 
@@ -80,8 +122,8 @@ wall-clock time across a power cycle?** It does not, and it has no wall clock
 while running either: the RTC is compiled out of the port, there is no 32.768 kHz
 crystal or backup cell on the board, and file timestamps come from a constant baked
 in at build time. The evidence is in [`SPEC.md`](SPEC.md) under Findings. It is why
-the journal will confirm the date with you, and why codes default to HOTP with a
-QR resync flow for TOTP.
+the journal confirms the date with you, and why codes default to HOTP with a QR
+resync flow for TOTP.
 
 The plan lives in [`SPEC.md`](SPEC.md), the backlog in
 [`FEATURES.md`](FEATURES.md), and the rules the code is held to in
@@ -117,8 +159,7 @@ Flashing is a deliberate step you take, not part of any build routine — the
 simulator is where cc-Q gets exercised. When you do want it on hardware: copy the
 `.dfu` to a FAT32 microSD, then on the Q go **Advanced/Tools → Upgrade Firmware →
 From MicroSD**, check the version on screen, and approve. The Q reboots and
-installs. The first boot afterwards shows the unofficial-firmware warning and a
-long delay; that is key 0 doing its job.
+installs.
 
 To go back: install the matching official `.dfu` from
 [coldcard.com/downloads](https://coldcard.com/downloads) the same way. Coldcard
