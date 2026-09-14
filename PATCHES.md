@@ -1,0 +1,33 @@
+# PATCHES.md
+
+Every file **outside `shared/dq/`** that cc-Q modifies is logged here, with what
+changed and why. The point is to keep upstream merges cheap: this table is the
+complete list of places where a merge conflict can come from our side. Budget is
+under ten files.
+
+## Patched upstream files
+
+| file | change | why |
+|---|---|---|
+| `README.md` | Replaced upstream's README with cc-Q's. | The root README is the first thing anyone sees, and upstream's describes a Bitcoin wallet this firmware no longer is. Upstream's text is kept verbatim at `docs/upstream-README.md`, so nothing was lost and the per-platform build notes are still one click away. |
+| `releases/.gitignore` | Added `!cc-Q/*.dfu` beside the existing `*.dfu`. | Lets cc-Q binaries live in `releases/cc-Q/` while upstream's ignore of stray `.dfu` files elsewhere stays exactly as it was. |
+
+Nothing under `shared/`, `stm32/`, `unix/`, or `testing/` is patched yet. Every
+cc-Q change so far is a new file.
+
+## Decisions worth writing down
+
+**The DFU ships twice: in `releases/cc-Q/` and as a release asset.** Same bytes,
+one checksum file. A release-only binary is invisible to anyone browsing the repo,
+and a tree-only binary is awkward to link from release notes. The cost is a ~1.1 MB
+blob in git history per build, which is acceptable at the rate we cut builds. If
+that stops being true, drop the in-tree copy and keep the release asset.
+
+**Upstream features get hidden, not deleted** (`CLAUDE.md`, invariant 3). The
+Bitcoin menu tree is the first case: when M1 lands, `shared/flow.py` gets a patched
+menu, and `shared/` keeps every PSBT and multisig module it has today. They cost
+flash, not maintenance, and deleting them would make every future upstream merge a
+fight.
+
+**Time is not available.** See the M0 finding in `SPEC.md`. No code may assume a
+wall clock exists; anything that needs one asks the owner.
