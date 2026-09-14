@@ -56,7 +56,8 @@ def hotp(secret, counter, digits=6, algo='SHA1'):
     off = mac[-1] & 0x0f
     code = ((mac[off] & 0x7f) << 24 | (mac[off + 1] & 0xff) << 16 |
             (mac[off + 2] & 0xff) << 8 | (mac[off + 3] & 0xff))
-    return str(code % (10 ** digits)).rjust(digits, '0')
+    # no str.rjust in MicroPython, and this runs for every code shown
+    return ('%0' + str(digits) + 'd') % (code % (10 ** digits))
 
 
 def totp(secret, unix_time, period=30, digits=6, algo='SHA1'):

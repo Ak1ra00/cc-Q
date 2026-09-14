@@ -71,22 +71,28 @@ def fit(msg, width=CHARS_W):
     return msg[:width - 1] + '⋯'
 
 
+def _padded(msg, width):
+    "MicroPython has no str.ljust, and this is on every screen draw"
+    n = width - len(msg)
+    return msg + (' ' * n) if n > 0 else msg
+
+
 def pad(left, right, width=CHARS_W):
     "left text, right text, one line, right-aligned against the last column"
     room = width - len(right) - 1
     if room < 1:
         return fit(right, width)
-    return '%s %s' % (fit(left, room).ljust(room), right)
+    return '%s %s' % (_padded(fit(left, room), room), right)
 
 
 def header(dis, title, right=None):
     # reverse video: the cell buffer only offers black or full-phosphor
     # backgrounds, so a bar is inverted rather than the 13% tint in SPEC.md.
-    dis.text(0, 0, pad(title, right or '').ljust(CHARS_W), invert=True)
+    dis.text(0, 0, _padded(pad(title, right or ''), CHARS_W), invert=True)
 
 
 def footer(dis, keys, right=None):
-    dis.text(0, -1, pad(keys, right or '').ljust(CHARS_W), invert=True)
+    dis.text(0, -1, _padded(pad(keys, right or ''), CHARS_W), invert=True)
 
 
 def body(dis, row, msg, x=0, dark=False):
