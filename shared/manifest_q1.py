@@ -22,14 +22,20 @@ freeze_as_mpy('', [
 	'dq/keys.py',
 	'dq/store.py',
 	'dq/clock.py',
+	'dq/dates.py',
 	'dq/otp.py',
 	'dq/session.py',
 	'dq/ui.py',
+	'dq/hid.py',
 	'dq/apps/__init__.py',
 	'dq/apps/home.py',
 	'dq/apps/vault.py',
 	'dq/apps/journal.py',
 	'dq/apps/codes.py',
+	'dq/apps/recovery.py',
+	'dq/apps/sign.py',
+	'dq/apps/witness.py',
+	'dq/apps/keypad.py',
 ], opt=0)
 
 # Optimize data-like files, since no need to debug them.

@@ -435,7 +435,9 @@ AdvancedNormalMenu = [
 # cc-Q: the personal terminal. Works with no seed, so it appears on every menu.
 async def start_dq(*a):
     from dq.apps import home
-    import dq.apps.vault, dq.apps.codes, dq.apps.journal     # registers them
+    # importing each module registers it; the home screen reads the registry
+    import dq.apps.vault, dq.apps.codes, dq.apps.journal
+    import dq.apps.recovery, dq.apps.sign, dq.apps.witness, dq.apps.keypad
     await home.run()
 
 VirginSystem = [

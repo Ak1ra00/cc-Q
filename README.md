@@ -79,15 +79,26 @@ any time with `python3 misc/dq-screens/render.py`.
 
 ## What it is
 
-Three apps, all encrypted under keys that never leave the device, all reachable
+Seven apps, all encrypted under keys that never leave the device, all reachable
 from one home screen:
 
-- **vault** — passwords, searchable by service and login. Each entry has a number
-  that never changes and never gets reused. That number is what you write on a
-  paper card; the card itself carries no passwords.
-- **codes** — TOTP and HOTP sign-in codes, enrolled by scanning the QR the service
-  shows you.
-- **journal** — one encrypted entry per day, written on the device's own keyboard.
+- **vault** `v` — passwords, searchable by service and login. Each entry has a
+  number that never changes and never gets reused. That number is what you write
+  on a paper card; the card itself carries no passwords.
+- **codes** `c` — TOTP and HOTP sign-in codes, enrolled by scanning the QR the
+  service shows you.
+- **journal** `j` — one encrypted entry per day, written on the device's own
+  keyboard.
+- **recovery** `b` — split the device key into shares so a wiped or lost Q is
+  survivable. Every share is needed; each one alone reveals nothing.
+- **sign** `s` — sign and verify text with an identity key derived from the
+  device key, no seed and no Bitcoin involved. Signatures are recoverable, so a
+  verifier needs only the message and the signature.
+- **witness** `w` — hash a file off the card and log the digest with the date you
+  confirmed, so you can later prove the bytes are unchanged.
+- **keypad** `k` — snippets you retype constantly, typed into the machine in
+  front of you over USB. It cannot reach the vault's passwords; typing is a
+  service any app can use, and the vault uses it too.
 
 Behind them: a green-phosphor CRT theme applied globally, a plugin registry so the
 home screen never hardcodes an app list, and an app-scoped record store on microSD
@@ -125,13 +136,15 @@ on first run rather than burying it here:
 | **M5** | Journal | **code complete** |
 | **M6** | Codes | **code complete** |
 | M7 | Hide the Bitcoin menus, boot sequence, settings | next |
+| — | recovery, sign, witness, keypad | **code complete** |
 
 Be precise about what "code complete" means here, because it is not the same as
 working:
 
-- **Tested**: the record store, key derivation, OTP, the clock rules, and each
-  app's record logic — 68 tests, including the RFC 4226 and RFC 6238 vectors.
-- **Compiled**: all 13 modules build under `mpy-cross`, MicroPython's own
+- **Tested**: the record store, key derivation, OTP, the clock rules, share
+  splitting, and each app's record logic — 117 tests, including the RFC 4226 and
+  RFC 6238 vectors.
+- **Compiled**: all 19 modules build under `mpy-cross`, MicroPython's own
   compiler, not just CPython.
 - **Not yet run**: every screen. The simulator needs SDL2, which was not
   available where this was built, so no cc-Q UI has been drawn even once. Treat
@@ -260,9 +273,12 @@ shared/dq/
     theme.py            palette, header and footer bars, list rendering
     keys.py             device key, per-app subkeys, optional BIP-85
     store.py            encrypted per-app record file, atomic write, card mirror
+    dates.py            calendar arithmetic, with no datetime and no clock
+    hid.py              typing over USB; a service, not an app
     apps/__init__.py    DQApp base class, @register_app, APPS registry
     apps/home.py        home screen — reads the registry, knows no app
     apps/vault.py  apps/journal.py  apps/codes.py
+    apps/recovery.py  apps/sign.py  apps/witness.py  apps/keypad.py
 ```
 
 Adding an app is four steps: write the class, decorate it with `@register_app`, add

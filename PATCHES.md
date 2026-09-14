@@ -45,6 +45,20 @@ menu, and `shared/` keeps every PSBT and multisig module it has today. They cost
 flash, not maintenance, and deleting them would make every future upstream merge a
 fight.
 
+**Typing is a service, not an app.** The obvious design was a keypad app that
+types vault passwords, and it is wrong: invariant 4 says no app knows another. So
+`dq/hid.py` types text for whoever asks, the vault uses it for passwords, and
+keypad is its own app for the snippets you retype constantly. Two tests enforce
+the boundary in both directions -- no app imports another, and no framework
+module imports an app. Both caught real violations the day they were written.
+
+**Recovery is n-of-n XOR, not k-of-n Shamir.** Every share is needed, which is a
+real limitation and is on the screen rather than in a footnote. SLIP-39 would
+give k-of-n but needs GF(256) arithmetic and a wordlist; that is a lot of surface
+to get subtly wrong in a thing whose failure mode is "your vault is gone". If it
+lands later it should be a second format alongside this one, never a silent
+replacement.
+
 **Time is not available.** See the M0 finding in `SPEC.md`. No code may assume a
 wall clock exists; anything that needs one asks the owner.
 

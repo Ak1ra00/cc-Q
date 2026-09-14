@@ -16,19 +16,21 @@ async def run():
         theme.header(dis, 'cc-Q', _power())
 
         today = today_or_none()
-        theme.body(dis, 1, today or 'date not set', x=2)
+        theme.body(dis, 0, today or 'date not set', x=2)
 
-        for n, app in enumerate(APPS[:4]):
+        # Seven rows for apps, which is what is left after the header, the date
+        # and the footer. More than that and the extras are reachable by hotkey
+        # but not listed -- the day that happens, this wants paging.
+        for n, app in enumerate(APPS[:7]):
             try:
                 status, alert = app.home_line()
             except Exception:
                 status, alert = ('?', True)
-            dis.text(2, theme.BODY_TOP + 3 + n,
+            dis.text(2, theme.BODY_TOP + 1 + n,
                      theme.pad('%s  %s' % (app.hotkey, app.title), status,
                                theme.CHARS_W - 2))
 
-        theme.body(dis, 7, _storage(), x=2, dark=True)
-        theme.footer(dis, '   '.join('%s %s' % (a.hotkey, a.title) for a in APPS[:3]))
+        theme.footer(dis, _storage(), 'X exit')
         dis.show()
 
         ch = await ux_wait_keydown()
