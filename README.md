@@ -113,22 +113,29 @@ on first run rather than burying it here:
 
 ## Status
 
-**M0 — groundwork: done.** M1 is next.
+**M0-M6 are written. None of it has run on a device yet.**
 
 | milestone | what | state |
 |---|---|---|
-| **M0** | Fork, Q1 build, signable DFU, simulator, clock finding | **done** \* |
-| M1 | Theme layer, app registry, home screen | next |
-| M2 | Key modes and the encrypted record store | |
-| M3 | Vault, stored mode | |
-| M4 | Vault, derived mode (BIP-85, seed present) | |
-| M5 | Journal | |
-| M6 | Codes | |
-| M7 | Polish: boot sequence, first-run screen, settings | |
+| **M0** | Fork, Q1 build, signable DFU, clock finding | **done** |
+| **M1** | Theme layer, app registry, home screen | **code complete** |
+| **M2** | Key modes and the encrypted record store | **code complete** |
+| **M3** | Vault, stored mode | **code complete** |
+| **M4** | Vault, derived mode (BIP-85, seed present) | **code complete** |
+| **M5** | Journal | **code complete** |
+| **M6** | Codes | **code complete** |
+| M7 | Hide the Bitcoin menus, boot sequence, settings | next |
 
-\* M0's placeholder screen never landed in the tree — there is no `shared/dq/`
-yet. M1's home screen replaces it outright, so it is folded into M1 rather than
-built twice.
+Be precise about what "code complete" means here, because it is not the same as
+working:
+
+- **Tested**: the record store, key derivation, OTP, the clock rules, and each
+  app's record logic — 68 tests, including the RFC 4226 and RFC 6238 vectors.
+- **Compiled**: all 13 modules build under `mpy-cross`, MicroPython's own
+  compiler, not just CPython.
+- **Not yet run**: every screen. The simulator needs SDL2, which was not
+  available where this was built, so no cc-Q UI has been drawn even once. Treat
+  the screens as unproven until someone runs `./simulator.py --q1`.
 
 M0 answered the question two later milestones depend on — **does the Q keep
 wall-clock time across a power cycle?** It does not, and it has no wall clock
@@ -226,7 +233,18 @@ is for verifying *official* binaries against *upstream* source.
 ### Tests
 
 ```shell
-cd testing && py.test dq/          # cc-Q tests
+cd testing && python3 -m pytest dq/ --confcutdir=dq
+```
+
+`--confcutdir=dq` keeps upstream's `testing/conftest.py`, which needs a running
+simulator and its own dependencies, out of the way. cc-Q's tests need neither:
+they stand in for the MicroPython modules and run anywhere.
+
+To check the modules compile the way the device will compile them:
+
+```shell
+make -C external/micropython/mpy-cross CFLAGS_EXTRA=-Wno-error
+find shared/dq -name '*.py' -exec external/micropython/mpy-cross/mpy-cross -o /dev/null {} \;
 ```
 
 Upstream's suite under `testing/` still applies to upstream code and needs a

@@ -11,9 +11,18 @@ under ten files.
 |---|---|---|
 | `README.md` | Replaced upstream's README with cc-Q's. | The root README is the first thing anyone sees, and upstream's describes a Bitcoin wallet this firmware no longer is. Upstream's text is kept verbatim at `docs/upstream-README.md`, so nothing was lost and the per-platform build notes are still one click away. |
 | `releases/.gitignore` | Added `!cc-Q/*.dfu` beside the existing `*.dfu`. | Lets cc-Q binaries live in `releases/cc-Q/` while upstream's ignore of stray `.dfu` files elsewhere stays exactly as it was. |
+| `shared/manifest_q1.py` | One `freeze_as_mpy` block listing the `dq/` modules. | Nothing of ours ships to the device otherwise. Additive: upstream's own blocks are untouched. |
+| `shared/flow.py` | One `start_dq()` helper and one `MenuItem('cc-Q', shortcut='q')` on each of `VirginSystem`, `EmptyWallet` and `NormalSystem`. | The single entry point. It is on all three menus because cc-Q works with no seed, so it must be reachable on a device that has never had one. |
 
-Nothing under `shared/`, `stm32/`, `unix/`, or `testing/` is patched yet. Every
-cc-Q change so far is a new file.
+Four files, against a budget of ten. `stm32/`, `unix/` and upstream's own tests
+are untouched.
+
+**Still to come, and deliberately not done yet:** hiding the Bitcoin menus.
+Invariant 3 says hide rather than delete, and the honest way to do that is to
+make cc-Q the screen the owner lands on, with upstream's tree still reachable
+underneath. That is a bigger change to `flow.py` than M1-M6 needed, so it waits
+for M7 rather than being smuggled in early. Until then cc-Q is one menu item and
+the Coldcard behaves normally around it.
 
 ## New files outside `shared/dq/`
 
@@ -38,6 +47,14 @@ fight.
 
 **Time is not available.** See the M0 finding in `SPEC.md`. No code may assume a
 wall clock exists; anything that needs one asks the owner.
+
+**Green is a palette swap, not a patch.** `lcd_display` does
+`from font_iosevka import TEXT_PALETTES`, binding that list object; replacing its
+*contents* at startup recolours every screen in the firmware, upstream's menus
+included, without touching a single upstream file. The cost is that a cell's
+background can only be black or full phosphor, so the header and footer bars are
+reverse video rather than the 13% tint SPEC.md asks for. Worth it: the alternative
+patches the display driver, which every future upstream merge would then fight.
 
 **Mockups are rendered from the real font, not drawn by hand.** It costs a
 hundred lines and it catches things a mockup otherwise hides — the first pass used

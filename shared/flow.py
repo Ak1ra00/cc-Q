@@ -431,8 +431,16 @@ AdvancedNormalMenu = [
 ]
 
 # needs to create main wallet PIN
+
+# cc-Q: the personal terminal. Works with no seed, so it appears on every menu.
+async def start_dq(*a):
+    from dq.apps import home
+    import dq.apps.vault, dq.apps.codes, dq.apps.journal     # registers them
+    await home.run()
+
 VirginSystem = [
     #         xxxxxxxxxxxxxxxx
+    MenuItem('cc-Q', f=start_dq, shortcut='q'),
     MenuItem('Choose PIN Code', f=initial_pin_setup),
     MenuItem('Advanced/Tools', menu=AdvancedVirginMenu, shortcut='t'),
     MenuItem('Bag Number', f=show_bag_number),
@@ -466,6 +474,7 @@ NewSeedMenu = [
 # has PIN, but no secret seed yet
 EmptyWallet = [
     #         xxxxxxxxxxxxxxxx
+    MenuItem('cc-Q', f=start_dq, shortcut='q'),
     MenuItem('New Seed Words', menu=NewSeedMenu),
     MenuItem('Import Existing', menu=ImportWallet),
     MenuItem("Migrate Coldcard", menu=clone_start),
@@ -480,6 +489,7 @@ EmptyWallet = [
 # - key shortcuts in place for all items that will be shown on Q
 NormalSystem = [
     #         xxxxxxxxxxxxxxxx
+    MenuItem('cc-Q', f=start_dq, shortcut='q'),
     MenuItem('Ready To Sign', f=ready2sign, shortcut='r'),
     MenuItem('Passphrase', menu=start_b39_pw, predicate=word_based_seed, shortcut='p'),
     MenuItem('Scan Any QR Code', predicate=version.has_qr,

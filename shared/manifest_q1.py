@@ -15,6 +15,23 @@ freeze_as_mpy('', [
 	'ux_q1.py'
 ], opt=0)
 
+# cc-Q: our namespace. Everything of ours is here.
+freeze_as_mpy('', [
+	'dq/__init__.py',
+	'dq/theme.py',
+	'dq/keys.py',
+	'dq/store.py',
+	'dq/clock.py',
+	'dq/otp.py',
+	'dq/session.py',
+	'dq/ui.py',
+	'dq/apps/__init__.py',
+	'dq/apps/home.py',
+	'dq/apps/vault.py',
+	'dq/apps/journal.py',
+	'dq/apps/codes.py',
+], opt=0)
+
 # Optimize data-like files, since no need to debug them.
 freeze_as_mpy('', [
 	'font_iosevka.py',
