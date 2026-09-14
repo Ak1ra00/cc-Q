@@ -17,6 +17,7 @@ def _make_ngu():
     hash_mod.sha256d = lambda b: hashlib.sha256(hashlib.sha256(b).digest()).digest()
 
     hmac_mod = types.ModuleType('ngu.hmac')
+    hmac_mod.hmac_sha1 = lambda k, m: _hmac.new(k, m, hashlib.sha1).digest()
     hmac_mod.hmac_sha256 = lambda k, m: _hmac.new(k, m, hashlib.sha256).digest()
     hmac_mod.hmac_sha512 = lambda k, m: _hmac.new(k, m, hashlib.sha512).digest()
 
@@ -39,6 +40,14 @@ def _make_ngu():
 
     ngu.hash, ngu.hmac, ngu.random, ngu.aes = hash_mod, hmac_mod, rnd, aes
     return ngu
+
+
+def _fake_utime():
+    import time as _t
+    m = types.ModuleType('utime')
+    m.ticks_ms = lambda: int(_t.monotonic() * 1000)
+    m.ticks_diff = lambda a, b: a - b
+    return m
 
 
 class FakeSettings:
@@ -76,6 +85,7 @@ def micropython(monkeypatch):
     sys.modules['ujson'] = json
     sys.modules['ustruct'] = __import__('struct')
     sys.modules['ubinascii'] = __import__('binascii')
+    sys.modules['utime'] = _fake_utime()
 
     glob = types.ModuleType('glob')
     glob.settings = FakeSettings()
@@ -84,7 +94,7 @@ def micropython(monkeypatch):
 
     yield glob
 
-    for name in ('ngu', 'ujson', 'ustruct', 'ubinascii', 'glob'):
+    for name in ('ngu', 'ujson', 'ustruct', 'ubinascii', 'utime', 'glob'):
         sys.modules.pop(name, None)
 
 
