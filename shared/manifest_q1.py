@@ -23,6 +23,7 @@ freeze_as_mpy('', [
 	'dq/store.py',
 	'dq/clock.py',
 	'dq/dates.py',
+	'dq/backup.py',
 	'dq/otp.py',
 	'dq/session.py',
 	'dq/ui.py',

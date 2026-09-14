@@ -147,6 +147,73 @@ async def ask_date(guess, why):
             await ux_show_story('Want YYYY-MM-DD, like 2026-09-14.', title='date')
 
 
+async def first_run_notice():
+    """Shown once, before the device key exists. Returns True to go ahead.
+
+    This has to happen before anything touches keys.device_key(), because that
+    call mints the key. The owner gets told what they are taking on first.
+    """
+    from ux import ux_show_story
+    ch = await ux_show_story(
+        "cc-Q is about to make a key for this device, from its hardware random "
+        "number generator. It lives behind your PIN and never leaves the Q.\n\n"
+        "It is what your vault, journal and codes are encrypted with.\n\n"
+        "If this Q is wiped or lost, that key goes with it, and everything "
+        "stored under it becomes unreadable -- unless you exported it first. "
+        "The recovery app splits the key into shares for exactly that reason.\n\n"
+        "No seed is needed, and you will not be asked for one.\n\n"
+        "Press OK to make the key, or X to back out.", title='first run')
+    return ch == 'y'
+
+
+async def export_records(app_name, records, what):
+    "write an app's records to the card as plain text, after saying so plainly"
+    from ux import ux_show_story, ux_confirm
+    from dq import backup
+
+    if not records:
+        await ux_show_story('Nothing to export yet.', title='export')
+        return False
+    if not await ux_confirm(backup.WARNING % what, title='export'):
+        return False
+
+    from files import CardSlot
+    fname = backup.filename(app_name)
+    with CardSlot() as card:
+        path = card.get_sd_root() + '/' + fname
+        with open(path, 'wt') as fd:
+            fd.write(backup.encode(app_name, records))
+
+    await ux_show_story('Wrote %s\n\n%d records, in plain text. Treat that card '
+                        'like the data itself.' % (fname, len(records)),
+                        title='export')
+    return True
+
+
+async def import_records(app_name, records, key):
+    """Read an export back and merge it in. Returns (records, changed).
+
+    Merges rather than replaces: restoring an old export should not delete what
+    you have written since.
+    """
+    from ux import ux_show_story
+    from dq import backup
+
+    path = await pick_file('import', suffix='.json')
+    if not path:
+        return records, False
+
+    from files import CardSlot
+    with CardSlot() as card:
+        with open(path, 'rt') as fd:
+            text = fd.read()
+
+    incoming = backup.decode(app_name, text)
+    records, added, updated = backup.merge(records, incoming, key)
+    await ux_show_story('Added %d, updated %d.' % (added, updated), title='import')
+    return records, bool(added or updated)
+
+
 async def scan_text(prompt='Scan a QR'):
     "read a QR; apps use this rather than touching the scanner themselves"
     from ux_q1 import QRScannerInteraction
@@ -239,12 +306,8 @@ async def offer_export(title, blob, filename=None, qr_ok=False):
 async def pick_file(title, suffix=None, max_size=16 * 1024 * 1024):
     "choose a file off the card; returns a full path or None"
     from actions import file_picker
-    got = await file_picker(suffix=suffix, max_size=max_size,
-                            none_msg='No files on the card to %s.' % title)
-    if not got:
-        return None
-    # file_picker hands back a path, or (path, size) depending on the caller
-    return got[0] if isinstance(got, (tuple, list)) else got
+    return await file_picker(suffix=suffix, max_size=max_size,
+                             none_msg='No files on the card to %s.' % title)
 
 
 def _wrap(txt, width):

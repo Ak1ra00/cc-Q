@@ -107,6 +107,37 @@ def t_witness():
            witness.hexed(uhashlib.sha256(data).digest())
 check('witness streaming sha256', t_witness)
 
+def t_backup():
+    from dq import backup
+    recs = [{'id': 1, 'service': 'a', 'note': 'kept'}]
+    out = backup.decode('vault', backup.encode('vault', recs))
+    assert out == recs
+    merged, added, updated = backup.merge(out, [{'id': 1, 'service': 'b'}], 'id')
+    assert (added, updated) == (0, 1) and merged[0]['note'] == 'kept'
+check('export/import round-trip', t_backup)
+
+def t_vault_tombstone():
+    from dq.apps import vault
+    recs = [vault.new_entry([], 'a', 'a@x')]
+    recs.append(vault.new_entry(recs, 'b', 'b@x'))
+    vault.delete_entry(recs, recs[-1])
+    assert vault.next_id(recs) == 3, vault.next_id(recs)
+    assert len(vault.live(recs)) == 1
+check('vault delete keeps the id claimed', t_vault_tombstone)
+
+def t_menu_build():
+    # the top menu is built from the registry at import of flow; make sure the
+    # pieces it needs exist and nothing raises
+    import dq.apps.vault, dq.apps.codes, dq.apps.journal
+    import dq.apps.recovery, dq.apps.sign, dq.apps.witness, dq.apps.keypad
+    from dq.apps import APPS
+    titles = [a.title for a in APPS]
+    keys = [a.hotkey for a in APPS]
+    assert len(set(keys)) == len(keys), keys
+    assert '0' not in keys and 'z' not in keys, 'clashes with status/Coldcard rows'
+    assert all(len(t) <= 10 for t in titles), titles
+check('top-menu rows are unique and fit', t_menu_build)
+
 def t_registry():
     import dq.apps.vault, dq.apps.codes, dq.apps.journal
     import dq.apps.recovery, dq.apps.sign, dq.apps.witness, dq.apps.keypad
