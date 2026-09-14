@@ -447,13 +447,13 @@ def _dq_apps():
 
 
 async def start_dq(*a):
-    from dq.apps import home
+    # kept as an entry point for anything that wants to open cc-Q directly
     _dq_apps()
-    await home.run()
 
 
 async def _run_dq_app(menu, label, item):
     from dq import theme, ui
+    from dq.apps import home
     from dq.keys import is_first_run, device_key
 
     theme.apply()
@@ -471,18 +471,30 @@ async def _run_dq_app(menu, label, item):
                 await app.start()
             except Exception as exc:
                 await ui.show_error(app.title, exc)
+            finally:
+                # whatever happened, the status on the landing screen may have
+                # moved; the menu recomputes labels on the way back
+                home.invalidate()
             return
 
 
 def dq_top_menu(coldcard_menu):
-    "cc-Q's apps, and a way down into the Coldcard underneath"
+    """cc-Q's landing screen: the date, every app with its own status, and a way
+    down into the Coldcard underneath.
+
+    Built once, but each app row computes its label when drawn, so the statuses
+    are current without rebuilding anything.
+    """
     from dq import theme
+    from dq.apps import home
     theme.apply()
-    items = [MenuItem(a.title, f=_run_dq_app, arg=a.hotkey, shortcut=a.hotkey)
-             for a in _dq_apps()]
-    items.append(MenuItem('status', f=start_dq, shortcut='0'))
+    _dq_apps()
+
+    items = [MenuItem(home.info_label(), f=home.set_date, shortcut='0')]
+    items.extend(home.rows(_run_dq_app))
     items.append(MenuItem('Coldcard', menu=coldcard_menu, shortcut='z'))
     return items
+
 
 VirginSystem = [
     #         xxxxxxxxxxxxxxxx
