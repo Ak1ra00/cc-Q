@@ -15,7 +15,7 @@ only**. Not affiliated with, endorsed by, or supported by Coinkite.
 <a href="https://github.com/Ak1ra00/cc-Q/raw/main/releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu"><img src="docs/img/download-dfu.png" width="300" alt="Download cc-Q 0.1 for the Coldcard Q"></a>
 
 **[Download `cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](https://github.com/Ak1ra00/cc-Q/raw/main/releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu)** ·
-sha256 `eb4a2ad2939ab50e…0657dc` ·
+sha256 `d25ef07d00df0258…4af827` ·
 [browse it](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) ·
 [older builds](releases/cc-Q)
 
@@ -36,8 +36,8 @@ on hardware yet. Use a device you are willing to wipe.
 <td width="50%"><img src="docs/img/screen-vault-find.png" width="100%" alt="Vault search: a find field filtering entries by service, each row showing its permanent id, match count in the footer."></td>
 </tr>
 <tr>
-<td><sub><b>Home.</b> One row per app, each rendering its own status. <code>not written</code> in amber is the only nag in the product.</sub></td>
-<td><sub><b>Vault — find.</b> Type to filter. The number on the right is the entry's id: assigned once, never reused.</sub></td>
+<td><sub><b>The landing screen.</b> One row per app carrying its own status, the date on top, the Coldcard's own menu at the bottom. <code>not written</code> in amber is the only nag in the product.</sub></td>
+<td><sub><b>Vault.</b> Opens straight here — typing is the fastest path to a password. The number on the right is the entry's id: assigned once, never reused.</sub></td>
 </tr>
 <tr>
 <td><img src="docs/img/screen-vault-entry.png" width="100%" alt="Vault entry: password shown large in phosphor green with a QR code beside it, an amber auto-hide countdown, and the word stored in the corner."></td>
@@ -55,13 +55,23 @@ on hardware yet. Use a device you are willing to wipe.
 <td><sub><b>Journal.</b> Five lines visible, on the Q's own keyboard. Save state is shown twice, because unsaved text on an unpluggable device deserves it.</sub></td>
 <td><sub><b>Codes, clock unknown.</b> The Q has no clock. Rather than show numbers that might be wrong, cc-Q greys them and says why.</sub></td>
 </tr>
+<tr>
+<td><img src="docs/img/screen-words.png" width="100%" alt="Word game: three guessed words scored letter by letter, one letter highlighted in reverse video as an exact match, a fourth word being typed."></td>
+<td><img src="docs/img/screen-dice.png" width="100%" alt="Dice screen showing a sealed roll: a four-group code to show someone before the result is revealed."></td>
+</tr>
+<tr>
+<td><sub><b>words.</b> Six tries, on the BIP-39 list already in flash. Reverse video is an exact letter, bright is present, dim is not in the word — the three palettes the hardware has.</sub></td>
+<td><sub><b>dice.</b> The code is shown <i>before</i> the roll is revealed, so afterwards anyone can check the result was fixed in advance.</sub></td>
+</tr>
 </table>
 
 These are rendered from the Q's own font data at the panel's real geometry —
 320×240, a 34×10 character grid of 9×22px cells — so the line lengths are the
-line lengths you get. All seven apps are in the download above; what is not yet
-proven is how these screens behave under a finger on a real device. Regenerate
-the images any time with `python3 misc/dq-screens/render.py`.
+line lengths you get, and the letter colouring in the game is what the scoring
+code actually produces. The landing screen is upstream's own menu widget, drawn
+here the way the firmware draws menus. What is still unproven is how any of it
+behaves under a finger on a real device. Regenerate the images with
+`python3 misc/dq-screens/render.py`.
 
 ## Read this first
 
@@ -166,7 +176,7 @@ The plan and its milestones live in [`SPEC.md`](SPEC.md), the backlog in
 
 | file | what is in it | sha256 |
 |---|---|---|
-| [`cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) | **current.** All seven apps, on upstream 1.5.2Q. | `eb4a2ad2939ab50e…0657dc` |
+| [`cc-Q-0.1-2026-09-14-q1-devkey0.dfu`](releases/cc-Q/cc-Q-0.1-2026-09-14-q1-devkey0.dfu) | **current.** All seven apps, on upstream 1.5.2Q. | `d25ef07d00df0258…4af827` |
 | [`2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu`](releases/cc-Q/2026-09-03T1540-v1.5.2Q-q1-devkey0-cc-Q.dfu) | Upstream 1.5.2Q rebuilt, unchanged. The toolchain proof, kept so later builds can be diffed against it. | `86868b47…7a3d61` |
 
 Both are for the Q only and both are signed with the published developer key, so

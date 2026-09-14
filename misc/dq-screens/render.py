@@ -141,15 +141,33 @@ def s_warning():
 
 
 def s_home():
+    """The landing screen: upstream's MenuSystem, with our rows.
+
+    Not a screen of our own any more, so it is drawn the way the firmware draws
+    menus -- selection in reverse video, scrollbar at the right edge.
+    """
     p = Panel()
-    p.bar(0); p.bar(9)
+    p.bar(0)
     p.text(0, 0, 'cc-Q', PHOSPHOR); p.right(0, '87%', FAINT)
-    p.text(2, 2, 'SUN 14 SEP 2026', PHOSPHOR)
-    p.text(4, 2, 'v  vault', PHOSPHOR);   p.right(4, '42 entries', FAINT)
-    p.text(5, 2, 'c  codes', PHOSPHOR);   p.right(5, '3 enrolled', FAINT)
-    p.text(6, 2, 'j  journal', PHOSPHOR); p.right(6, 'not written', ALERT)
-    p.text(8, 2, 'card A ok  •  B mirrored', FAINT)
-    p.text(9, 0, 'v vault   c codes   j journal', DIM)
+
+    rows = [('SUN 14 SEP 2026   card A+B', None),
+            ('vault     42 entries', None),
+            ('codes     3 enrolled', None),
+            ('journal   not written', ALERT),
+            ('words     12/19, streak 4', None),
+            ('recovery  never split', ALERT),
+            ('Coldcard', None)]
+    for i, (label, colour) in enumerate(rows):
+        sel = (i == 1)
+        if sel:
+            p.rect(0, TOP_MARGIN + (i + 1) * CELL_H, WIDTH, CELL_H, PHOSPHOR)
+            p.text(i + 1, 1, label, BG)
+        else:
+            p.text(i + 1, 1, label, colour or DIM)
+
+    # scrollbar, the way lcd_display draws one
+    p.rect(WIDTH - 4, TOP_MARGIN, 3, 10 * CELL_H - CELL_H, PHOSPHOR, 0.18)
+    p.rect(WIDTH - 4, TOP_MARGIN, 3, 120, PHOSPHOR)
     return p
 
 
@@ -163,7 +181,7 @@ def s_vault_find():
     p.text(4, 1, '▶ protonmail', PHOSPHOR); p.right(4, '14', PHOSPHOR)
     p.text(5, 3, 'proton vpn', DIM);             p.right(5, '27', FAINT)
     p.text(6, 3, 'protonmail work', DIM);        p.right(6, '31', FAINT)
-    p.text(9, 0, '3 of 42', FAINT); p.right(9, 'OK open   X back', FAINT)
+    p.text(9, 0, '3 of 42', FAINT); p.right(9, 'F1 new   OK open', FAINT)
     return p
 
 
@@ -175,7 +193,7 @@ def s_vault_detail():
     p.text(4, 2, '4Kj9-wQ2m-7Fv3', PHOSPHOR)
     p.text(5, 2, '-bL8xR', PHOSPHOR)
     p.text(7, 2, 'hides in 12s', ALERT); p.right(7, 'stored', FAINT)
-    p.text(9, 0, 'n NFC push', FAINT); p.right(9, 'X back', FAINT)
+    p.text(9, 0, 'QR  n NFC  F1 type', FAINT); p.right(9, 'X back', FAINT)
     qr(p, 232, 92, 3)
     return p
 
@@ -230,7 +248,7 @@ def s_codes():
         bx, by, bw = LEFT_MARGIN + CELL_W, TOP_MARGIN + (r + 1) * CELL_H + 8, 31 * CELL_W
         p.rect(bx, by, bw, 5, PHOSPHOR, 0.18)
         p.rect(bx, by, int(bw * frac), 5, DIM if frac > 0.3 else ALERT)
-    p.text(9, 0, 'r resync', FAINT); p.right(9, '+ enroll   X back', FAINT)
+    p.text(9, 0, 'r resync  + enroll', FAINT); p.right(9, 'F2 export  X back', FAINT)
     return p
 
 
@@ -257,6 +275,54 @@ def s_first_run():
     p.text(7, 1, 'journal and codes go too,', ALERT)
     p.text(8, 1, 'unless you exported them.', ALERT)
     p.text(9, 0, 'OK understood', PHOSPHOR)
+    return p
+
+
+def s_words():
+    """The game, drawn exactly as apps/words.py draws it.
+
+    Answer 'eagle'. The marks below are what words.score() actually returns for
+    these guesses -- HIT reverse video, NEAR phosphor, MISS dim, which is the
+    three palettes the hardware has.
+    """
+    p = Panel()
+    p.bar(0); p.bar(9)
+    p.text(0, 0, 'words', PHOSPHOR); p.right(0, '3 left', FAINT)
+
+    H, N, M = 2, 1, 0
+    guesses = [('about', [N, M, M, M, M]),
+               ('alarm', [N, N, M, M, M]),
+               ('agree', [N, N, M, N, H])]
+    for row, (word, marks) in enumerate(guesses):
+        for i, ch in enumerate(word.upper()):
+            x = LEFT_MARGIN + (2 + i * 2) * CELL_W
+            y = TOP_MARGIN + (1 + row) * CELL_H
+            if marks[i] == H:
+                p.rect(x - 1, y, CELL_W + 2, CELL_H, PHOSPHOR)
+                p.blit(x, y, CELL_W, GLYPHS[ch], BG)
+            else:
+                p.blit(x, y, CELL_W, GLYPHS[ch], PHOSPHOR if marks[i] == N else FAINT)
+
+    # the row being typed: ' '.join(typing.upper()), then a cursor
+    typing = 'sle'
+    p.text(4, 2, ' '.join(typing.upper()), PHOSPHOR)
+    p.text(4, 2 + len(typing) * 2, '_', PHOSPHOR)
+
+    p.text(7, 2, 'guess a word', FAINT)
+    p.text(9, 0, 'type a word', FAINT); p.right(9, 'X give up', FAINT)
+    return p
+
+
+def s_dice():
+    "a sealed roll: the code is shown before the result exists to anyone"
+    p = Panel()
+    p.bar(0); p.bar(9)
+    p.text(0, 0, 'dice', PHOSPHOR); p.right(0, 'sealed', ALERT)
+    p.text(2, 1, 'Show this before revealing:', FAINT)
+    p.text(4, 2, '9f2a-44c1-0b7e-51d3', PHOSPHOR)
+    p.text(6, 1, 'd6, 3 rolls.  The result is', FAINT)
+    p.text(7, 1, 'already decided.', FAINT)
+    p.text(9, 0, 'OK reveal', PHOSPHOR); p.right(9, 'X later', FAINT)
     return p
 
 
@@ -305,6 +371,8 @@ SCREENS = [
     ('screen-codes',       s_codes),
     ('screen-codes-noclock', s_codes_stale),
     ('screen-first-run',   s_first_run),
+    ('screen-words',       s_words),
+    ('screen-dice',        s_dice),
 ]
 
 if __name__ == '__main__':
