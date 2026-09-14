@@ -17,20 +17,21 @@ def enabled():
         return False
 
 
-# US layout: what the emulated keyboard can actually produce. Anything else would
-# arrive as the wrong character on the far machine, which for a password means a
-# failed login the owner cannot see the cause of.
-TYPABLE = ('abcdefghijklmnopqrstuvwxyz'
-           'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-           '0123456789'
-           ' !"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~')
+def _char_map():
+    "the keyboard's own table: the only honest answer to 'can this be typed?'"
+    from usb import EmulatedKeyboard
+    return EmulatedKeyboard.char_map
 
 
 def untypable(text):
-    "the characters we would get wrong, in order, without duplicates"
+    "the characters the emulated keyboard has no key for, in order, no repeats"
+    try:
+        char_map = _char_map()
+    except ImportError:
+        return []                       # off-device: nothing to check against
     seen = []
     for ch in text or '':
-        if ch not in TYPABLE and ch not in seen:
+        if ch.lower() not in char_map and ch not in seen:
             seen.append(ch)
     return seen
 
@@ -48,8 +49,15 @@ def plan(text, press_enter=False):
 
 
 async def send(text, press_enter=False, label=None):
-    "confirm, then type. Returns True if it was sent."
+    """Confirm, then type. Returns True if it was sent.
+
+    Drives EmulatedKeyboard directly rather than going through
+    drv_entro.single_send_keystrokes, which appends a carriage return to
+    everything it sends. That is right for a password going into a login box and
+    wrong for a snippet going into a form field, so the choice has to be ours.
+    """
     keys = plan(text, press_enter)
+
     if not enabled():
         from ux import ux_show_story
         await ux_show_story(
@@ -59,6 +67,22 @@ async def send(text, press_enter=False, label=None):
             title='keyboard')
         return False
 
-    from drv_entro import single_send_keystrokes
-    await single_send_keystrokes(keys, label)
+    from ux import ux_show_story, ux_dramatic_pause, OK
+    from usb import EmulatedKeyboard
+
+    msg = 'Put the cursor where you want it typed, then press %s.' % OK
+    if label:
+        msg = '%s\n\n%s' % (label, msg)
+    if press_enter:
+        msg += '\n\nEnter will be pressed afterwards.'
+
+    if await ux_show_story(msg, title='type') != 'y':
+        return False
+
+    with EmulatedKeyboard() as kbd:
+        if await kbd.connect():
+            return False                # host would not enumerate us; it said so
+        await kbd.send_keystrokes(keys)
+
+    await ux_dramatic_pause('Sent.', 0.25)
     return True

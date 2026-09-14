@@ -3,9 +3,16 @@
 import pytest
 
 
-def test_untypable_finds_the_bad_ones(settings):
+def test_untypable_uses_the_keyboards_real_table(settings):
+    """The emulated keyboard knows 42 characters, roughly the Base64 set.
+
+    An unknown one is not dropped -- usb.py types "x" in its place -- so a
+    password with a symbol in it would go out silently wrong. Hence the guard.
+    """
     from dq import hid
-    assert hid.untypable('normal-Password_123!') == []
+    assert hid.untypable('hunter2') == []
+    assert hid.untypable('abc+/-*') == []
+    assert hid.untypable('P@ssw0rd!') == ['@', '!']
     assert hid.untypable('café') == ['é']
     assert hid.untypable('a—b—c') == ['—'], 'reported once, not per occurrence'
 
@@ -13,9 +20,10 @@ def test_untypable_finds_the_bad_ones(settings):
 def test_plan_refuses_rather_than_mangling(settings):
     "a silently wrong character looks like a wrong password on the far machine"
     from dq import hid
-    with pytest.raises(ValueError) as exc:
-        hid.plan('paßword')
-    assert 'cannot type' in str(exc.value)
+    for bad in ('paßword', 'P@ssw0rd!', 'has #hash'):
+        with pytest.raises(ValueError) as exc:
+            hid.plan(bad)
+        assert 'cannot type' in str(exc.value)
 
 
 def test_plan_passes_good_text(settings):
@@ -24,9 +32,13 @@ def test_plan_passes_good_text(settings):
     assert hid.plan('hunter2', press_enter=True) == 'hunter2\r'
 
 
-def test_symbols_are_typable(settings):
+def test_enter_is_ours_to_decide(settings):
+    """upstream's send_keystrokes appends a carriage return to everything it
+    sends; we drive the keyboard directly so a snippet does not submit the form
+    it lands in."""
     from dq import hid
-    assert hid.plan('!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~') is not None
+    assert not hid.plan('some text').endswith('\r')
+    assert hid.plan('some text', press_enter=True).count('\r') == 1
 
 
 def test_new_snippet(settings):
@@ -46,7 +58,7 @@ def test_snippet_with_enter(settings):
 
 def test_snippet_validation(settings):
     from dq.apps import keypad
-    for label, text in [('', 'x'), ('x', ''), ('x', 'café'), ('x', 'y' * 500)]:
+    for label, text in [('', 'x'), ('x', ''), ('x', 'café'), ('x', '!'), ('x', 'y' * 500)]:
         with pytest.raises(ValueError):
             keypad.new_snippet([], label, text)
 

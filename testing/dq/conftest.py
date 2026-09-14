@@ -50,6 +50,33 @@ def _fake_utime():
     return m
 
 
+def _fake_usb():
+    """Stand in for usb.EmulatedKeyboard, carrying the REAL character table.
+
+    Parsed out of shared/usb.py rather than hand-copied, so a test about what
+    the keyboard can type cannot drift away from what it actually types.
+    """
+    import re, os
+    src = open(os.path.join(TOP, 'shared', 'usb.py')).read()
+    body = src[src.index('char_map = {'):]
+    body = body[:body.index('}') + 1]
+    table = dict(re.findall(r'"((?:[^"\\]|\\.)+)"\s*:\s*0x([0-9A-Fa-f]+)', body))
+    table = {k.encode().decode('unicode_escape'): int(v, 16) for k, v in table.items()}
+    assert 'a' in table and '1' in table, 'char_map did not parse'
+
+    m = types.ModuleType('usb')
+
+    class EmulatedKeyboard:
+        char_map = table
+
+        @classmethod
+        def can_type(cls, s):
+            return all(ch.lower() in cls.char_map for ch in s)
+
+    m.EmulatedKeyboard = EmulatedKeyboard
+    return m
+
+
 class FakeSettings:
     "enough of nvstore.SettingsObject for our code: get / put / save"
     def __init__(self):
@@ -90,6 +117,7 @@ def micropython(monkeypatch):
     uh.sha256 = hashlib.sha256
     uh.sha512 = hashlib.sha512
     sys.modules['uhashlib'] = uh
+    sys.modules['usb'] = _fake_usb()
 
     glob = types.ModuleType('glob')
     glob.settings = FakeSettings()
@@ -98,7 +126,7 @@ def micropython(monkeypatch):
 
     yield glob
 
-    for name in ('ngu', 'ujson', 'ustruct', 'ubinascii', 'utime', 'uhashlib', 'glob'):
+    for name in ('ngu', 'ujson', 'ustruct', 'ubinascii', 'utime', 'uhashlib', 'usb', 'glob'):
         sys.modules.pop(name, None)
 
 
